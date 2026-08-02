@@ -78,4 +78,5 @@ export class Rock {
         // (more intuitive than pixel coords which increase as you go down the screen)
         return this.maxAltitude - this.lowestPoint();
     }
+
 }

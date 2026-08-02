@@ -1,4 +1,5 @@
 import { Rock } from "./rocks";
+import { Landscape } from "./landscape";
 import { Container, type PointData } from "pixi.js";
 
 const SPAWN_CHANCE = 0.01
@@ -12,15 +13,15 @@ export class RockManager {
     private maxRocks: number;
     private minSize: number;
     private maxSize: number;
-    private groundLevel: number;
+    private ground: Landscape;
     
-    constructor(layer: Container, groundLevel: number, maxRocks: number, minSize:number, maxSize:number) {
+    constructor(layer: Container, ground: Landscape, maxRocks: number, minSize:number, maxSize:number) {
         console.log("rock size =" + minSize + " - " + maxSize);
         this.displayLayer = layer;
         this.maxRocks = maxRocks;
         this.minSize = minSize;
         this.maxSize = maxSize;
-        this.groundLevel = groundLevel;
+        this.ground = ground;
     }
 
     update(width: number, height: number, interval: number) {
@@ -44,11 +45,13 @@ export class RockManager {
             r.update(interval);
 
             // collision check with the ground
-            if (r.altitude() < this.groundLevel) {
+            if (r.altitude() < this.ground.heightAt(r.position.x)) {
+                //console.log("impact at height=" + this.ground.heightAt(r.position.x));
                 if (r.radius > SHATTER_RADIUS) {
                     // big rocks break into smaller ones
-                    console.log("SMASH!");
+                    //console.log("SMASH!");
                     this.splitRock(height, r);
+                    this.ground.impact(r);
                 } else {
                     // smaller rocks become part of the landscape
                     // TODO
