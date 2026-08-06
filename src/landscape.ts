@@ -33,7 +33,7 @@ export class Landscape {
         // this.outline.push({x: 1000, y: groundHeight});
     }
 
-    update(width: number, height: number, interval: number) {
+    update(width: number, height: number) {
         this.surfaceLine.clear();
         //this.surfaceLine.moveTo(0, height-this.groundHeight);  // left edge
         for (let i=0; i<this.outline.length; i++) {
@@ -51,9 +51,9 @@ export class Landscape {
         return this.groundHeight;
     }
 
-    heightAt(x: number): number {
+    private heightAt(x: number): number {
         if (this.outline.length < 2) {  // landscape is just a flat line
-            return this.windowHeight - this.groundHeight;
+            return this.groundHeight;
         }
 
         // interpolate the height of the ground at this x-coord
@@ -65,7 +65,11 @@ export class Landscape {
         const p1 = (i==0) ? this.outline[0] : this.outline[i-1];
         const p2 = this.outline[i];
         const slope = (p2.y - p1.y) / (p2.x - p1.x);
-        return this.windowHeight - (p1.y + (slope * (x - p1.x)));  // y = mx + x
+        return p1.y + (slope * (x - p1.x));  // y = mx + x
+    }
+
+    public absoluteHeightAt(x: number): number {
+        return this.windowHeight - this.heightAt(x);
     }
 
     impact(impactor: Rock) {
@@ -76,8 +80,8 @@ export class Landscape {
         // add a point either side to define the crater edges
         const leftX = impactor.position.x - craterRadius;
         const rightX = impactor.position.x + craterRadius;
-        this.outline.push({x: leftX, y: this.groundHeight}); //this.heightAt(leftX)});
-        this.outline.push({x: rightX, y: this.groundHeight}); //this.heightAt(rightX)});
+        this.outline.push({x: leftX, y: this.heightAt(leftX)});
+        this.outline.push({x: rightX, y: this.heightAt(rightX)});
         
         // now see if there are any landscape points within the impact zone
         // and lower them proportional to their distance from the epicentre
@@ -94,14 +98,11 @@ export class Landscape {
 
         // make sure there is at least one point to define the floor of the crater
         if (pointFound == false) {
-            console.log("ADDING IMPACT POINT At x="+impactor.position.x);
             this.outline.push({
                 x: impactor.position.x,
-                y: Math.max(this.heightAt(impactor.position.x) - craterDepth, this.minimumHeight),
+                y: this.heightAt(impactor.position.x) - craterDepth,
+//                y: Math.max(this.heightAt(impactor.position.x) - craterDepth, this.minimumHeight),
             });
-        }
-        else {
-            console.log("No POINT FOUND: impactor x="+ impactor.position.x);
         }
         
         this.sortGroundPoints();  // put the outline back in x-order

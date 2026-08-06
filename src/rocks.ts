@@ -123,7 +123,7 @@ export class Rock {
         const outline = this.absoluteOutline();
         for (let i=0; i<outline.points.length; i+=2) {
             const groundX = outline.points[i];
-            const groundY = ground.heightAt(groundX);
+            const groundY = ground.absoluteHeightAt(groundX);
             if (outline.contains(groundX, groundY)) {
                 debugHook.drawPoint({x: groundX, y: groundY});
                 return true;

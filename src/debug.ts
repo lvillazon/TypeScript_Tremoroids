@@ -1,9 +1,9 @@
-import { Rock } from "./rocks";
 import { Landscape } from "./landscape";
 import { Container, Graphics, type PointData } from "pixi.js";
 import type { RockManager } from "./rock_manager";
 
 const DEBUG_COLOR = 0xff0000;
+const DEBUG_COLOR2 = 0xff7700;
 
 export class Debugger {
     private rockManager: RockManager;
@@ -19,10 +19,11 @@ export class Debugger {
         this.displayLayer.addChild(this.display);
     }
 
-    update(width: number, height: number, interval: number) {
+    update(width: number, height: number) {
         this.display.clear();
         // red outline around window, just so we know debug info is enabled
-        this.display.rect(1, 1, width-2, height-2).stroke({
+        // don't ask me why we need a 17px margin - allowing for scrollbars?
+        this.display.rect(1, 1, width-17, height-17).stroke({  
             width:2,
             color: DEBUG_COLOR,
         });
@@ -48,7 +49,7 @@ export class Debugger {
 
         // draw any points that have been added from other modules
         for (let i=0; i<this.deferredPoints.length; i++) {
-            this.display.circle(this.deferredPoints[i].x, this.deferredPoints[i].y, 3).fill(DEBUG_COLOR);
+            this.display.circle(this.deferredPoints[i].x, this.deferredPoints[i].y, 3).fill(DEBUG_COLOR2);
         }
 
     }

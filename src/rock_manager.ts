@@ -15,7 +15,6 @@ export class RockManager {
     private minSize: number;
     private maxSize: number;
     private ground: Landscape;
-    private debug: boolean;
     
     constructor(layer: Container, ground: Landscape, maxRocks: number, minSize:number, maxSize:number) {
         console.log("rock size =" + minSize + " - " + maxSize);
@@ -24,7 +23,6 @@ export class RockManager {
         this.minSize = minSize;
         this.maxSize = maxSize;
         this.ground = ground;
-        this.debug = false;
     }
 
     public debugGetRock(index: number): Rock {
@@ -35,26 +33,6 @@ export class RockManager {
         return this.rocks.length;
     }
 
-    debugLeft() {
-        this.debug = true;
-        this.rocks[0].position.x -= 10;
-    }
-
-    debugRight() {
-        this.debug = true;
-        this.rocks[0].position.x += 10;
-    }
-
-    debugUp() {
-        this.debug = true;
-        this.rocks[0].position.y -= 10;
-    }
-
-    debugDown() {
-        this.debug = true;
-        this.rocks[0].position.y += 10;
-    }
-
     update(width: number, height: number, interval: number, debugHook: Debugger) {
         for(let i=0; i<this.rocks.length; i++) {
             let r = this.rocks[i];
@@ -63,11 +41,9 @@ export class RockManager {
             // collision check with the ground
             if (r.collidesWith(this.ground, debugHook)) {
                 console.log("colliding");
-//            if (r.altitude() < this.ground.heightAt(r.position.x)) {
-                //console.log("impact at height=" + this.ground.heightAt(r.position.x));
                 if (r.radius > SHATTER_RADIUS) {
                     // big rocks break into smaller ones
-                    //console.log("SMASH!");
+                    console.log("SMASH!");
                     this.splitRock(height, r);
                     this.ground.impact(r);
                 } else {
@@ -75,16 +51,18 @@ export class RockManager {
                     // TODO
                     console.log("too small for crater");
                 }
+                this.despawnRock(i);
+            }
 
-                this.displayLayer.removeChild(this.rocks[i].image); // remove graphical part from the scene
-                // remove from the rocks array by replacing it with a copy of the last rock
-                // and then popping the last rock off - saves shuffling elements down
-                this.rocks[i] = this.rocks[this.rocks.length -1];
-                this.rocks.pop();
+            // remove any rocks that escaped hitting the ground and fell through the screen
+            if (r.altitude() < 0) {
+                this.despawnRock(i);
             }
         }
+
+
         // add new rocks at random until we hit population cap
-        if (this.rocks.length < this.maxRocks && this.rockSpawnChance()) {
+        if ((this.rocks.length < this.maxRocks) && this.rockSpawnChance()) {
             // console.log("spawning rock at height" + height);
             // spawn above the screen at random x pos
             let startPoint = {x: Math.random() * width, y: -100};
@@ -119,6 +97,15 @@ export class RockManager {
             radius);
         this.rocks.push(r);
         this.displayLayer.addChild(r.image);
+    }
+
+    private despawnRock(rockNumber: number) {
+        // remove graphical part from the scene
+        this.displayLayer.removeChild(this.rocks[rockNumber].image);
+        // remove from the rocks array by replacing it with a copy of the last rock
+        // and then popping the last rock off - saves shuffling elements down
+        this.rocks[rockNumber] = this.rocks[this.rocks.length -1];
+        this.rocks.pop();
     }
 
     rockSpawnChance(): boolean {

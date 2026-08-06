@@ -42,8 +42,8 @@ export class Game {
                 return
             }
             this.rockManager.update(app.screen.width, app.screen.height, ticker.deltaTime, this.debugInfo);
-            this.landscape.update(app.screen.width, app.screen.height, ticker.deltaTime);
-            this.debugInfo.update(app.screen.width, app.screen.height, ticker.deltaTime);
+            this.landscape.update(app.screen.width, app.screen.height);
+            this.debugInfo.update(app.screen.width, app.screen.height);
         });
 
         // keyboard handler
@@ -52,18 +52,18 @@ export class Game {
                 case "Space":
                     this.paused = !this.paused;
                     break;
-                case "ArrowLeft":
-                    this.rockManager.debugLeft();
-                    break;
-                case "ArrowRight":
-                    this.rockManager.debugRight();
-                    break;
-                case "ArrowUp":
-                    this.rockManager.debugUp();
-                    break;
-                case "ArrowDown":
-                    this.rockManager.debugDown();
-                    break;
+                // case "ArrowLeft":
+                //     this.rockManager.debugLeft();
+                //     break;
+                // case "ArrowRight":
+                //     this.rockManager.debugRight();
+                //     break;
+                // case "ArrowUp":
+                //     this.rockManager.debugUp();
+                //     break;
+                // case "ArrowDown":
+                //     this.rockManager.debugDown();
+                //     break;
             }
         });
 
