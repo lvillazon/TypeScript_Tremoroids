@@ -1,0 +1,23 @@
+TREMOROIDS
+==========
+
+An old-school sideways scroller with a graphical style similar to asteroids.
+Rocks tumble from the sky and crash into the ground, causing debris and craters.
+The player drives a tank across the landscape, trying to avoid getting stuck by
+shooting the rocks and the ground to clear a path.
+Some rocks release cannon upgrades for more interesting shot types.
+When the player gets stuck or squashed by a rock, the game is over.
+
+
+Collision physics
+Rocks are irregular polygons and may be rotating as they fall.
+For a first aproximation, the maximum radius of the rock can be used to check collisions.
+But inside this radius, we must be more precise:
+1. rock:rock collisions
+For each point on Rock A, check if it is inside the boundary of rock B.
+And then for each point on Rock B, check if it is inside the boundary of A
+If any of these tests is true, we collide
+
+2. rock:landscape collisions
+For each point on the rock, find the landscape point immdiately left and right of it.
+check if the rock point lies below the line drawn between those points

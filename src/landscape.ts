@@ -4,17 +4,33 @@ import { Graphics, Container, type PointData } from "pixi.js";
 
 export class Landscape {
     private displayLayer: Container;
-    private outline: PointData[] = [];
+    public outline: PointData[] = [];
     private groundHeight: number;
     private minimumHeight: number;
+    private windowHeight: number;
     private surfaceLine = new Graphics();
     
-    constructor(layer: Container, groundHeight: number) {
+    constructor(layer: Container, groundHeight: number, windowHeight: number) {
         this.displayLayer = layer;
         this.displayLayer.addChild(this.surfaceLine);
         this.groundHeight = groundHeight;
+        this.windowHeight = windowHeight;
         this.minimumHeight = 40;
         this.outline.push({x: 0, y: groundHeight})
+        // DEBUG ZIGZAG
+        // let wobble = 20;
+        // for (let x=10; x<1000; x+=10) {
+        //     this.outline.push({x: x, y: groundHeight + wobble});
+        //     wobble *= -1;
+        // }
+
+        // DEBUG SPIKE
+        // this.outline.push({x: 100, y: groundHeight});
+        // this.outline.push({x: 150, y: groundHeight-50});
+        // this.outline.push({x: 200, y: groundHeight+250});
+        // this.outline.push({x: 250, y: groundHeight+50});
+        // this.outline.push({x: 300, y: groundHeight});
+        // this.outline.push({x: 1000, y: groundHeight});
     }
 
     update(width: number, height: number, interval: number) {
@@ -35,9 +51,9 @@ export class Landscape {
         return this.groundHeight;
     }
 
-    heightAt(x: number) {
+    heightAt(x: number): number {
         if (this.outline.length < 2) {  // landscape is just a flat line
-            return this.groundHeight;
+            return this.windowHeight - this.groundHeight;
         }
 
         // interpolate the height of the ground at this x-coord
@@ -48,8 +64,8 @@ export class Landscape {
         
         const p1 = (i==0) ? this.outline[0] : this.outline[i-1];
         const p2 = this.outline[i];
-        const slope = (p1.y - p2.y) / (p2.x - p1.x);
-        return p1.y + (slope * (x - p1.x));  // y = mx + x
+        const slope = (p2.y - p1.y) / (p2.x - p1.x);
+        return this.windowHeight - (p1.y + (slope * (x - p1.x)));  // y = mx + x
     }
 
     impact(impactor: Rock) {
@@ -60,8 +76,8 @@ export class Landscape {
         // add a point either side to define the crater edges
         const leftX = impactor.position.x - craterRadius;
         const rightX = impactor.position.x + craterRadius;
-        this.outline.push({x: leftX, y: this.heightAt(leftX)});
-        this.outline.push({x: rightX, y: this.heightAt(rightX)});
+        this.outline.push({x: leftX, y: this.groundHeight}); //this.heightAt(leftX)});
+        this.outline.push({x: rightX, y: this.groundHeight}); //this.heightAt(rightX)});
         
         // now see if there are any landscape points within the impact zone
         // and lower them proportional to their distance from the epicentre
