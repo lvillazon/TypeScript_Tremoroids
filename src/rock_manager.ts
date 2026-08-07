@@ -39,13 +39,14 @@ export class RockManager {
             r.update(interval);
 
             // collision check with the ground
-            if (r.collidesWith(this.ground, debugHook)) {
+            const collidePoint = r.collidesWith(this.ground, debugHook);
+            if (collidePoint != null) {
                 console.log("colliding");
                 if (r.radius > SHATTER_RADIUS) {
                     // big rocks break into smaller ones
                     console.log("SMASH!");
                     this.splitRock(height, r);
-                    this.ground.impact(r);
+                    this.ground.impact(r, collidePoint);
                 } else {
                     // smaller rocks become part of the landscape
                     // TODO

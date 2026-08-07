@@ -31,7 +31,7 @@ export class Debugger {
         // draw the absolute positions of each rock vertex
         for (let i=0; i<this.rockManager.debugGetRockCount(); i++) {
             const r = this.rockManager.debugGetRock(i)
-            const rockOutline = r.debugGetOutline();
+            const rockOutline = r.debugGetBottomOutline();
             this.display.circle(r.position.x, r.position.y, 3).fill(DEBUG_COLOR);
             for (let j=0; j<rockOutline.points.length; j+=2) {
                 let pointX = rockOutline.points[j];

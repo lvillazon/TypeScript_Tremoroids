@@ -23,7 +23,11 @@ export class Game {
         this.app = app;
         
         this.landscapeLayer = new Container();
-        this.landscape = new Landscape(this.landscapeLayer, GROUND_LEVEL, app.screen.height);
+        this.landscape = new Landscape(
+            this.landscapeLayer, 
+            app.screen.height - GROUND_LEVEL, 
+            app.screen.height
+        );
         this.app.stage.addChild(this.landscapeLayer);
 
         this.rockLayer = new Container();

@@ -71,7 +71,7 @@ export class Rock {
         this.image.position.set(this.position.x, this.position.y);
     }
 
-    private lowestPoint(): number {
+    public lowestPoint(): number {
         let lowest = -Infinity;
         for (let i=0; i<this.outline.points.length; i+=2) {
             let px = this.outline.points[i];
@@ -88,6 +88,26 @@ export class Rock {
 
     public debugGetOutline(): Polygon {  // public wrapper just for debug
         return this.absoluteOutline();
+    }
+
+    public debugGetBottomOutline(): Polygon {
+        // return the outline of thr bottom half of the rock, in absolute coords
+        // also allowing for rotation
+        let absolutePoints: PointData[] = [];
+        for (let i=0; i<this.outline.points.length; i+=2) {
+            const px = this.outline.points[i];
+            const py = this.outline.points[i+1];
+            const x = px * Math.cos(this.image.rotation)
+                    - py * Math.sin(this.image.rotation)
+                    + this.position.x;
+            const y = px * Math.sin(this.image.rotation)
+                    + py * Math.cos(this.image.rotation)
+                    + this.position.y;
+            if (y > this.position.y) {
+                absolutePoints.push({x: x, y: y}); 
+            }
+        }
+        return new Polygon(absolutePoints);   
     }
 
     private absoluteOutline(): Polygon {
@@ -114,7 +134,7 @@ export class Rock {
         return this.maxAltitude - this.lowestPoint();
     }
 
-    public collidesWith(ground: Landscape, debugHook: Debugger): boolean {
+    public collidesWith(ground: Landscape, debugHook: Debugger): PointData | null {
         // check if any of the points in the array are inside this rock
         // let absolutePoints: PointData[] = [];
         // for (let i=0; i<this.outline.points.length; i++) {
@@ -126,10 +146,10 @@ export class Rock {
             const groundY = ground.absoluteHeightAt(groundX);
             if (outline.contains(groundX, groundY)) {
                 debugHook.drawPoint({x: groundX, y: groundY});
-                return true;
+                return {x: groundX, y: groundY};
             }
         }
-        return false;
+        return null;
     }
 
 }
