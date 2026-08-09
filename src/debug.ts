@@ -10,7 +10,7 @@ export class Debugger {
     private landscape: Landscape;
     private displayLayer: Container;
     private display: Graphics = new Graphics();
-    private deferredPoints: PointData[] = [];
+    private deferredPoints: {point: PointData; color: number}[] = [];
 
     constructor(displayLayer: Container, rockManager: RockManager, landscape:Landscape) {
         this.rockManager = rockManager;
@@ -44,18 +44,20 @@ export class Debugger {
         // by getting the height of the landscape at every single x value
         // this is very slow, so just for debugging, ok?
         // for (let x=0; x<width; x++) {
-        //     this.display.circle(x, this.landscape.heightAt(x), 2).fill(DEBUG_COLOR);
+        //     this.display.circle(x, this.landscape.absoluteHeightAt(x), 2).fill(DEBUG_COLOR);
         // }
 
         // draw any points that have been added from other modules
         for (let i=0; i<this.deferredPoints.length; i++) {
-            this.display.circle(this.deferredPoints[i].x, this.deferredPoints[i].y, 3).fill(DEBUG_COLOR2);
+            this.display
+                .circle(this.deferredPoints[i].point.x, this.deferredPoints[i].point.y, 3)
+                .fill(this.deferredPoints[i].color);
         }
 
     }
 
-    drawPoint(p: PointData) {
+    drawPoint(p: PointData, color: number) {
         // add a point to the list to be drawn on the next update
-        this.deferredPoints.push(p);
+        this.deferredPoints.push({point: p, color: color});
     }
 }

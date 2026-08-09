@@ -3,7 +3,7 @@ import { RockManager } from "./rock_manager";
 import { Landscape } from "./landscape";
 import { Debugger } from "./debug";
 
-const GROUND_LEVEL = 150;
+const GROUND_LEVEL = 450;
 const MAX_ROCKS = 1;
 const MIN_ROCK_SIZE = 80;
 const MAX_ROCK_SIZE = 120;
@@ -26,7 +26,8 @@ export class Game {
         this.landscape = new Landscape(
             this.landscapeLayer, 
             app.screen.height - GROUND_LEVEL, 
-            app.screen.height
+            app.screen.height,
+            app.screen.width,
         );
         this.app.stage.addChild(this.landscapeLayer);
 
@@ -47,7 +48,7 @@ export class Game {
             }
             this.rockManager.update(app.screen.width, app.screen.height, ticker.deltaTime, this.debugInfo);
             this.landscape.update(app.screen.width, app.screen.height);
-            this.debugInfo.update(app.screen.width, app.screen.height);
+            //this.debugInfo.update(app.screen.width, app.screen.height);
         });
 
         // keyboard handler

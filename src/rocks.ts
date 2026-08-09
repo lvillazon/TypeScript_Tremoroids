@@ -28,7 +28,7 @@ export class Rock {
         const points: PointData[] = [];
         let wiggle = 0.5;
         for (let i=0; i<number_of_points; i++) {
-            let theta = 2 * Math.PI * i / number_of_points;
+            let theta = 2 * Math.PI * i / (number_of_points + 1);
             wiggle += Math.random() * (2 * ROUGHNESS) - ROUGHNESS;  // +/- roughness
             let x = this.radius * Math.cos(theta) * wiggle;
             let y = this.radius * Math.sin(theta) * wiggle;
@@ -145,7 +145,7 @@ export class Rock {
             const groundX = outline.points[i];
             const groundY = ground.absoluteHeightAt(groundX);
             if (outline.contains(groundX, groundY)) {
-                debugHook.drawPoint({x: groundX, y: groundY});
+                debugHook.drawPoint({x: groundX, y: groundY}, 0xFFFF00);
                 return {x: groundX, y: groundY};
             }
         }

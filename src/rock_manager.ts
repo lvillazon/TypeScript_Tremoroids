@@ -46,7 +46,7 @@ export class RockManager {
                     // big rocks break into smaller ones
                     console.log("SMASH!");
                     this.splitRock(height, r);
-                    this.ground.impact(r, collidePoint);
+                    this.ground.impact(r, collidePoint, debugHook);
                 } else {
                     // smaller rocks become part of the landscape
                     // TODO
