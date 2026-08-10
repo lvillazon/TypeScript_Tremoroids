@@ -24,7 +24,7 @@ export class Rock {
         this.rotationSpeed = Math.random() / 25 - 0.02;
         let min_x = 0, max_x = 0, min_y = 0, max_y = 0;
         this.radius = radius;
-        const number_of_points = radius /10;
+        const number_of_points = Math.max(radius /10, 3);  // need at least 3 points
         const points: PointData[] = [];
         let wiggle = 0.5;
         for (let i=0; i<number_of_points; i++) {
@@ -39,6 +39,8 @@ export class Rock {
             let p: PointData = {x, y};
             points.push(p);
         }
+        // recalculate the actual radius based on the points plotted
+        this.radius = (max_x - min_x) /2;
         this.outline = new Polygon(points);
         this.color = 0xffffff;
         this.image

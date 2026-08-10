@@ -58,6 +58,10 @@ export class Debugger {
 
     drawPoint(p: PointData, color: number) {
         // add a point to the list to be drawn on the next update
+        const MAX_DEBUG_POINTS = 3;
+        while (this.deferredPoints.length >= MAX_DEBUG_POINTS) {
+            this.deferredPoints.shift();
+        }
         this.deferredPoints.push({point: p, color: color});
     }
 }

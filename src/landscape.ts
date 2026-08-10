@@ -69,32 +69,41 @@ export class Landscape {
         // Create a semi-circle of points, centred on the impact point      
         const points = craterRadius / 10;
         const craterPoints: PointData[] = [];
-        let i = 0
-        let x = 0;
-        let y = 0;
-        let angle_increment = Math.PI / points; 
-        let theta = 0;
-        debugHook.drawPoint({
-            x: impactPoint.x + craterRadius * Math.cos(theta),
-            y: impactPoint.y + craterDepth * Math.sin(theta),
-            }, 0x0000FF);
-        while (i<points) {
-            x = impactPoint.x + craterRadius * Math.cos(theta);
-            y = Math.max(
-                impactPoint.y + craterDepth * Math.sin(theta),
-                this.heightAt(x));
-            let p: PointData = {x, y};
-            craterPoints.push(p);
-            i++;
-            theta += angle_increment;            
-        }
+        // let i = 0
+        // let x = 0;
+        // let y = 0;
+        // let angle_increment = Math.PI / points; 
+        // let theta = 0;
+        // debugHook.drawPoint({
+        //     x: impactPoint.x + craterRadius * Math.cos(theta),
+        //     y: impactPoint.y + craterDepth * Math.sin(theta),
+        //     }, 0x0000FF);
+        // while (i<points) {
+        //     x = impactPoint.x + craterRadius * Math.cos(theta);
+        //     y = Math.max(
+        //         impactPoint.y + craterDepth * Math.sin(theta),
+        //         this.heightAt(x));
+        //     let p: PointData = {x, y};
+        //     craterPoints.push(p);
+        //     i++;
+        //     theta += angle_increment;            
+        // }
         //TODO - this adds points clockwise, so x values are from right to left
 
+        const halfOutline = impactor.debugGetBottomOutline();
+        for (let i=0; i<halfOutline.points.length; i+=2) {
+            craterPoints.push({x: halfOutline.points[i], y: halfOutline.points[i+1]});
+        }
+
         // add a point either side to define the crater edges
-        const leftX = impactor.position.x - craterRadius;
-        const rightX = impactor.position.x + craterRadius;
-        this.outline.push({x: leftX, y: this.heightAt(leftX)});
-        this.outline.push({x: rightX, y: this.heightAt(rightX)});
+        const leftX = impactor.position.x - 2* craterRadius;
+        const rightX = impactor.position.x + 2 * craterRadius;
+        const leftPoint: PointData = {x: leftX, y: this.heightAt(leftX)};
+        const rightPoint: PointData = {x: rightX, y: this.heightAt(rightX)};
+        this.outline.push(leftPoint);
+        this.outline.push(rightPoint);
+        debugHook.drawPoint(leftPoint, 0xff0000);
+        debugHook.drawPoint(rightPoint, 0x00ff00);
 
         // and then re-sort
         this.sortGroundPoints();  // put the outline back in x-order
@@ -103,14 +112,15 @@ export class Landscape {
         // by averaging the y-values
         const adjustedCraterPoints: PointData[] = [];
         for (let i=0; i<craterPoints.length; i++) {
+            const x = craterPoints[i].x;
             adjustedCraterPoints.push({
-                x: craterPoints[i].x,
-                y: (craterPoints[i].y + this.heightAt(x)) / 2
+                x: x,
+                y: (craterPoints[i].y + craterDepth + this.heightAt(x)) / 2
             });
         }
 
         // remove any existing landscape points that fall within the crater zone
-        i=1;  // musn't remove left hand edge or we create a hole in the ground
+        let i=1;  // musn't remove left hand edge or we create a hole in the ground
         let craterLeftside = impactPoint.x - craterRadius;
         let craterRightside = impactPoint.x + craterRadius;
         while ((i < this.outline.length) && (this.outline[i].x <= craterLeftside)) {

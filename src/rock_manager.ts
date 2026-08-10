@@ -4,7 +4,7 @@ import { Container, type PointData } from "pixi.js";
 import { Debugger } from "./debug";
 
 const SPAWN_CHANCE = 0.01
-const SHATTER_RADIUS = 50;
+const SHATTER_RADIUS = 30;
 const HORIZONTAL_VARIABILITY = 2; // how much horizontal velocity is added to shattered rocks
 const VERTICAL_DECAY = 3; // how much vertical velocity drops for shattered rocks
 
@@ -75,19 +75,19 @@ export class RockManager {
     }
 
     splitRock(screenHeight: number, r: Rock) {
+        const MAX_FRAGMENTS = 5;
         // shatter this rock into smaller fragments that bounce away
-        const v1 = r.velocity.x - (Math.random() * HORIZONTAL_VARIABILITY);
-        const v2 = r.velocity.x + (Math.random() * HORIZONTAL_VARIABILITY);
-        this.spawnRock(
-            screenHeight, 
-            r.position, 
-            {x: v1, y: -r.velocity.y / VERTICAL_DECAY}, 
-            r.radius/2);
-        this.spawnRock(
-            screenHeight,
-            r.position, 
-            {x: v2, y: -r.velocity.y / VERTICAL_DECAY}, 
-            r.radius/2);
+        const numberofFragments = Math.ceil(Math.random() * MAX_FRAGMENTS);
+        for (let i=0; i<numberofFragments; i++) {
+            const v = r.velocity.x 
+                + (Math.random() * 2 * HORIZONTAL_VARIABILITY) - HORIZONTAL_VARIABILITY;
+            this.spawnRock(
+                screenHeight, 
+                r.position, 
+                {x: v, y: -r.velocity.y / VERTICAL_DECAY}, 
+                // fragments can't be bigger than the original
+                Math.min(r.radius, r.radius * 2 / numberofFragments));
+        }
     }
 
     spawnRock(screenHeight: number, position: PointData, velocity: PointData, radius: number) {
