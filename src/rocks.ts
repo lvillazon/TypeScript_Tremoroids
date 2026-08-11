@@ -1,5 +1,6 @@
 // Falling rocks
-import { Graphics, Polygon, type PointData } from "pixi.js";
+import { Polygon, type PointData } from "pixi.js";
+import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
 import type { Landscape } from "./landscape";
 
@@ -7,19 +8,17 @@ const GRAVITY = 0.02;
 const ROUGHNESS = 0.1;
 
 export class Rock {
-    public image: Graphics;
+    public rendered: Renderer;
     public velocity: PointData;
     public position: PointData;
     public rotationSpeed: number;
     private outline: Polygon;
     private maxAltitude: number;
     public radius: number;
-    public color: number;
-    public collidePoint: PointData; // DEBUG
 
     public constructor(maxAltitude: number, position: PointData, velocity: PointData, radius: number) {
         // the number of points in the outline is proportional to the radius
-        this.image = new Graphics();
+        this.rendered = new Renderer();
         this.maxAltitude = maxAltitude;
         this.rotationSpeed = Math.random() / 25 - 0.02;
         let min_x = 0, max_x = 0, min_y = 0, max_y = 0;
@@ -42,35 +41,19 @@ export class Rock {
         // recalculate the actual radius based on the points plotted
         this.radius = (max_x - min_x) /2;
         this.outline = new Polygon(points);
-        this.color = 0xffffff;
-        this.image
-            .poly(this.outline.points)
-            .fill({
-            color: 0x000000,
-            })
-            .stroke({
-            width: 3,
-            color: this.color,
-            });
-        // DEBUG add a line from the centre to the bottom point, to show orientation
-        //this.image.lineTo(0, this.radius).stroke({width: 3, color:0x00ff00}); 
+        this.rendered.poly(points);
 
-        this.image.position.set(position.x, position.y);
+        this.rendered.image.position.set(position.x, position.y);
         this.position = position;
         this.velocity = velocity;
-        // DEBUG
-        // the collidePoint is the x,y in absolute coords where we will check for impact
-        this.collidePoint = {x:position.x, y:position.y}
-
     }
 
     public update(interval: number) {
-        this.image.rotation += this.rotationSpeed * interval;
+        this.rendered.image.rotation += this.rotationSpeed * interval;
         this.velocity.y += GRAVITY;
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
-        //console.log(this.position);
-        this.image.position.set(this.position.x, this.position.y);
+        this.rendered.image.position.set(this.position.x, this.position.y);
     }
 
     public lowestPoint(): number {
@@ -78,8 +61,8 @@ export class Rock {
         for (let i=0; i<this.outline.points.length; i+=2) {
             let px = this.outline.points[i];
             let py = this.outline.points[i+1];
-            const y = py * Math.cos(this.image.rotation)
-                    + px * Math.sin(this.image.rotation)
+            const y = py * Math.cos(this.rendered.image.rotation)
+                    + px * Math.sin(this.rendered.image.rotation)
                     + this.position.y;
             if (y > lowest) {
                 lowest = y;
@@ -88,28 +71,24 @@ export class Rock {
         return lowest;    
     }
 
-    public debugGetOutline(): Polygon {  // public wrapper just for debug
-        return this.absoluteOutline();
-    }
-
-    public debugGetBottomOutline(): Polygon {
+    public getBottomOutline(): PointData[] {
         // return the outline of thr bottom half of the rock, in absolute coords
         // also allowing for rotation
         let absolutePoints: PointData[] = [];
         for (let i=0; i<this.outline.points.length; i+=2) {
             const px = this.outline.points[i];
             const py = this.outline.points[i+1];
-            const x = px * Math.cos(this.image.rotation)
-                    - py * Math.sin(this.image.rotation)
+            const x = px * Math.cos(this.rendered.image.rotation)
+                    - py * Math.sin(this.rendered.image.rotation)
                     + this.position.x;
-            const y = px * Math.sin(this.image.rotation)
-                    + py * Math.cos(this.image.rotation)
+            const y = px * Math.sin(this.rendered.image.rotation)
+                    + py * Math.cos(this.rendered.image.rotation)
                     + this.position.y;
             if (y > this.position.y) {
                 absolutePoints.push({x: x, y: y}); 
             }
         }
-        return new Polygon(absolutePoints);   
+        return absolutePoints;   
     }
 
     private absoluteOutline(): Polygon {
@@ -119,11 +98,11 @@ export class Rock {
         for (let i=0; i<this.outline.points.length; i+=2) {
             const px = this.outline.points[i];
             const py = this.outline.points[i+1];
-            const x = px * Math.cos(this.image.rotation)
-                    - py * Math.sin(this.image.rotation)
+            const x = px * Math.cos(this.rendered.image.rotation)
+                    - py * Math.sin(this.rendered.image.rotation)
                     + this.position.x;
-            const y = px * Math.sin(this.image.rotation)
-                    + py * Math.cos(this.image.rotation)
+            const y = px * Math.sin(this.rendered.image.rotation)
+                    + py * Math.cos(this.rendered.image.rotation)
                     + this.position.y;
             absolutePoints.push({x: x, y: y}); 
         }
@@ -153,5 +132,4 @@ export class Rock {
         }
         return null;
     }
-
 }

@@ -1,20 +1,16 @@
-import { Landscape } from "./landscape";
 import { Container, Graphics, type PointData } from "pixi.js";
 import type { RockManager } from "./rock_manager";
 
 const DEBUG_COLOR = 0xff0000;
-const DEBUG_COLOR2 = 0xff7700;
 
 export class Debugger {
     private rockManager: RockManager;
-    private landscape: Landscape;
     private displayLayer: Container;
     private display: Graphics = new Graphics();
     private deferredPoints: {point: PointData; color: number}[] = [];
 
-    constructor(displayLayer: Container, rockManager: RockManager, landscape:Landscape) {
+    constructor(displayLayer: Container, rockManager: RockManager) {
         this.rockManager = rockManager;
-        this.landscape = landscape;
         this.displayLayer = displayLayer;
         this.displayLayer.addChild(this.display);
     }
@@ -28,14 +24,14 @@ export class Debugger {
             color: DEBUG_COLOR,
         });
 
-        // draw the absolute positions of each rock vertex
+        // draw the absolute positions of each rock vertex on the impacting side
         for (let i=0; i<this.rockManager.debugGetRockCount(); i++) {
             const r = this.rockManager.debugGetRock(i)
-            const rockOutline = r.debugGetBottomOutline();
+            const rockOutline = r.getBottomOutline();
             this.display.circle(r.position.x, r.position.y, 3).fill(DEBUG_COLOR);
-            for (let j=0; j<rockOutline.points.length; j+=2) {
-                let pointX = rockOutline.points[j];
-                let pointY = rockOutline.points[j+1];
+            for (let j=0; j<rockOutline.length; j++) {
+                let pointX = rockOutline[j].x;
+                let pointY = rockOutline[j].y;
                 this.display.circle(pointX, pointY, 3).fill(DEBUG_COLOR);
             }
         }

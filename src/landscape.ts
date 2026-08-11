@@ -1,39 +1,32 @@
 // stars and the ground outline
 import { Rock } from "./rocks";
-import { Graphics, Container, type PointData } from "pixi.js";
+import { Container, type PointData } from "pixi.js";
+import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
 
 export class Landscape {
     private displayLayer: Container;
     public outline: PointData[] = [];
     private groundHeight: number;
-    private minimumHeight: number;
-    private windowHeight: number;
-    private surfaceLine = new Graphics();
+    private surfaceLine = new Renderer();
     
-    constructor(layer: Container, groundHeight: number, 
-        windowHeight: number, windowWidth: number) {
+    constructor(layer: Container, groundHeight: number, windowWidth: number) {
         this.displayLayer = layer;
-        this.displayLayer.addChild(this.surfaceLine);
+        this.displayLayer.addChild(this.surfaceLine.image);
         this.groundHeight = groundHeight;
-        this.windowHeight = windowHeight;
-        this.minimumHeight = 40;
         this.outline.push({x: -windowWidth, y: groundHeight});
         this.outline.push({x: windowWidth, y: groundHeight});
     }
 
-    update(width: number, height: number) {
+    update(width: number) {
         this.surfaceLine.clear();
-        //this.surfaceLine.moveTo(0, height-this.groundHeight);  // left edge
+        if (width > this.outline[this.outline.length-1].x) {
+            // add a new point to make sure the landscape always reaches to the end of the screen
+            this.outline.push({x: width, y: this.groundHeight});
+        }
         for (let i=0; i<this.outline.length; i++) {
             this.surfaceLine.lineTo(this.outline[i].x, this.outline[i].y);
         }
-        this.surfaceLine.lineTo(width, 400); //this.heightAt(width));  // right edge
-
-        this.surfaceLine.stroke({
-            width:3,
-            color: 0xffffff,
-        });
     }
 
     height(): number {
@@ -66,35 +59,9 @@ export class Landscape {
         let craterRadius = impactor.radius;
         let craterDepth = impactor.radius;
 
-        // Create a semi-circle of points, centred on the impact point      
-        const points = craterRadius / 10;
-        const craterPoints: PointData[] = [];
-        // let i = 0
-        // let x = 0;
-        // let y = 0;
-        // let angle_increment = Math.PI / points; 
-        // let theta = 0;
-        // debugHook.drawPoint({
-        //     x: impactPoint.x + craterRadius * Math.cos(theta),
-        //     y: impactPoint.y + craterDepth * Math.sin(theta),
-        //     }, 0x0000FF);
-        // while (i<points) {
-        //     x = impactPoint.x + craterRadius * Math.cos(theta);
-        //     y = Math.max(
-        //         impactPoint.y + craterDepth * Math.sin(theta),
-        //         this.heightAt(x));
-        //     let p: PointData = {x, y};
-        //     craterPoints.push(p);
-        //     i++;
-        //     theta += angle_increment;            
-        // }
-        //TODO - this adds points clockwise, so x values are from right to left
-
-        const halfOutline = impactor.debugGetBottomOutline();
-        for (let i=0; i<halfOutline.points.length; i+=2) {
-            craterPoints.push({x: halfOutline.points[i], y: halfOutline.points[i+1]});
-        }
-
+        // the shape of the rock facing the ground provides the starting point for the crater
+        const craterPoints = impactor.getBottomOutline();
+        
         // add a point either side to define the crater edges
         const leftX = impactor.position.x - 2* craterRadius;
         const rightX = impactor.position.x + 2 * craterRadius;

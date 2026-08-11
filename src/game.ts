@@ -1,6 +1,7 @@
 import { Application, Container } from "pixi.js";
 import { RockManager } from "./rock_manager";
 import { Landscape } from "./landscape";
+import { Tank } from "./tank";
 import { Debugger } from "./debug";
 
 const GROUND_LEVEL = 450;
@@ -15,6 +16,8 @@ export class Game {
     private rockManager: RockManager;
     private landscapeLayer: Container;
     private landscape: Landscape;
+    private playerLayer: Container;
+    private tank: Tank;
     private debugInfo: Debugger;
     private debugLayer: Container;
     private paused = false;
@@ -26,7 +29,6 @@ export class Game {
         this.landscape = new Landscape(
             this.landscapeLayer, 
             app.screen.height - GROUND_LEVEL, 
-            app.screen.height,
             app.screen.width,
         );
         this.app.stage.addChild(this.landscapeLayer);
@@ -38,8 +40,16 @@ export class Game {
             MAX_ROCKS, MIN_ROCK_SIZE, MAX_ROCK_SIZE);
         this.app.stage.addChild(this.rockLayer);
 
+        this.playerLayer = new Container();
+        this.tank = new Tank(
+            this.playerLayer,
+            this.landscape,
+            {x: app.screen.width/2, y: app.screen.height - GROUND_LEVEL},  // position
+            50);  // size
+        this.app.stage.addChild(this.playerLayer);
+
         this.debugLayer = new Container();
-        this.debugInfo = new Debugger(this.debugLayer, this.rockManager, this.landscape);
+        this.debugInfo = new Debugger(this.debugLayer, this.rockManager);
         this.app.stage.addChild(this.debugLayer);
 
         this.app.ticker.add((ticker) => {
@@ -47,7 +57,8 @@ export class Game {
                 return
             }
             this.rockManager.update(app.screen.width, app.screen.height, ticker.deltaTime, this.debugInfo);
-            this.landscape.update(app.screen.width, app.screen.height);
+            this.landscape.update(app.screen.width);
+            this.tank.update(app.screen.width, app.screen.height, ticker.deltaTime, this.debugInfo);
             //this.debugInfo.update(app.screen.width, app.screen.height);
         });
 

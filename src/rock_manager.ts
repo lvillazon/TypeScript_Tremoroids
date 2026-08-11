@@ -97,12 +97,12 @@ export class RockManager {
             {x: velocity.x, y: velocity.y}, 
             radius);
         this.rocks.push(r);
-        this.displayLayer.addChild(r.image);
+        this.displayLayer.addChild(r.rendered.image);
     }
 
     private despawnRock(rockNumber: number) {
         // remove graphical part from the scene
-        this.displayLayer.removeChild(this.rocks[rockNumber].image);
+        this.displayLayer.removeChild(this.rocks[rockNumber].rendered.image);
         // remove from the rocks array by replacing it with a copy of the last rock
         // and then popping the last rock off - saves shuffling elements down
         this.rocks[rockNumber] = this.rocks[this.rocks.length -1];

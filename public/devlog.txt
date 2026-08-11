@@ -14,10 +14,26 @@ Rocks are irregular polygons and may be rotating as they fall.
 For a first aproximation, the maximum radius of the rock can be used to check collisions.
 But inside this radius, we must be more precise:
 1. rock:rock collisions
-For each point on Rock A, check if it is inside the boundary of rock B.
-And then for each point on Rock B, check if it is inside the boundary of A
-If any of these tests is true, we collide
+Rocks do not collide with each other - it's a bit too busy
 
 2. rock:landscape collisions
-For each point on the rock, find the landscape point immdiately left and right of it.
-check if the rock point lies below the line drawn between those points
+For each of the points in the outline of the rock (corrected for its present rotation),
+calculate the height of the landscape. If that point on the landscape lies within the outline
+of the rock, then we trigger a collision.
+
+3. tank:rock collisions
+If the tank bounding box collides with a rock, the tank explodes.
+
+4. tank:landscape collisions
+TBD
+
+Craters & debris
+Rocks above a threshold size create a crater that is based on the outline of the bottom 
+half of the rock. The crater outline is averaged with the existing landscape profile.
+The original rock also fractures into a random number of rocks from 1 to 5 smaller rocks. 
+(A rock that "splits" into a single rock, is really just bouncing, but the original rock is destroyed 
+and a new, smaller one is created.)
+
+Rocks below the crater threshold will use the top half of their outline to raise the outline of
+the landscape. This simulates debris accumulating on the surface.
+
