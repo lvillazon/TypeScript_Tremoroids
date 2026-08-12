@@ -5,7 +5,7 @@ import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
 import type { Landscape } from "./landscape";
 
-const ANIMATION_FRAMES = 3;
+const ANIMATION_FRAMES = 5;
 const SPEED = 1;
 
 function distanceBetween(point1: PointData, point2:PointData) {
@@ -24,7 +24,6 @@ export class Tank {
     private trackSpacing: number;
     private frames: Texture[] = [];
     private frameNumber: number;
-    private frameTimer: number;
     private sprite: Sprite;
 
     public constructor(
@@ -33,7 +32,7 @@ export class Tank {
         this.displayLayer = layer;
         this.ground = ground;
         this.size = size;
-        this.trackSpacing = size/5;
+        this.trackSpacing = size/3;
         this.barrelAngle = this.toRadians(-30);  // in degrees
         for (let f=0; f<ANIMATION_FRAMES; f++) {
             const image = this.drawTankFrame(f);
@@ -159,7 +158,7 @@ export class Tank {
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
         let distanceTravelled = distanceBetween(this.position, this.oldPosition);
-        if (distanceTravelled >= this.trackSpacing) {
+        if (distanceTravelled >= 1) {
             this.oldPosition = {x: this.position.x, y: this.position.y};
             this.frameNumber = (this.frameNumber + 1) % ANIMATION_FRAMES;
             this.sprite.texture = this.frames[this.frameNumber];
