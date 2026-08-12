@@ -21,6 +21,7 @@ export class Game {
     private debugInfo: Debugger;
     private debugLayer: Container;
     private paused = false;
+    private keys: Set<string>;
 
     public constructor(app: Application) {
         this.app = app;
@@ -42,50 +43,50 @@ export class Game {
 
         this.playerLayer = new Container();
         this.tank = new Tank(
+            app.renderer,
             this.playerLayer,
             this.landscape,
             {x: app.screen.width/2, y: app.screen.height - GROUND_LEVEL},  // position
-            50);  // size
+            20);  // size
         this.app.stage.addChild(this.playerLayer);
 
         this.debugLayer = new Container();
         this.debugInfo = new Debugger(this.debugLayer, this.rockManager);
         this.app.stage.addChild(this.debugLayer);
 
-        this.app.ticker.add((ticker) => {
-            if (this.paused) {
-                return
-            }
-            this.rockManager.update(app.screen.width, app.screen.height, ticker.deltaTime, this.debugInfo);
-            this.landscape.update(app.screen.width);
-            this.tank.update(app.screen.width, app.screen.height, ticker.deltaTime, this.debugInfo);
-            //this.debugInfo.update(app.screen.width, app.screen.height);
-        });
+        this.app.ticker.add((ticker) => this.update(ticker.deltaTime));
 
         // keyboard handler
+        this.keys = new Set<string>();
         window.addEventListener("keydown", (event) => {
-            switch (event.code) {
-                case "Space":
-                    this.paused = !this.paused;
-                    break;
-                // case "ArrowLeft":
-                //     this.rockManager.debugLeft();
-                //     break;
-                // case "ArrowRight":
-                //     this.rockManager.debugRight();
-                //     break;
-                // case "ArrowUp":
-                //     this.rockManager.debugUp();
-                //     break;
-                // case "ArrowDown":
-                //     this.rockManager.debugDown();
-                //     break;
-            }
+            this.keys.add(event.code);
+        });
+        window.addEventListener("keyup", (event) => {
+            this.keys.delete(event.code);
         });
 
-
-
-
     }
+
+    private update(deltaTime: number) {
+        if (this.paused) {
+            return
+        }
+
+        if (this.keys.has("Space")) {
+            this.paused = !this.paused;
+        }
+        if (this.keys.has("KeyZ")) {
+            this.tank.left();
+        }
+        if (this.keys.has("KeyX")) {
+            this.tank.right();
+        }
+
+        this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        this.landscape.update(this.app.screen.width);
+        this.tank.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        //this.debugInfo.update(app.screen.width, app.screen.height);
+    }
+
 }
  
