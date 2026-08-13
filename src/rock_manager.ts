@@ -44,13 +44,13 @@ export class RockManager {
                 console.log("colliding");
                 if (r.radius > SHATTER_RADIUS) {
                     // big rocks break into smaller ones
-                    console.log("SMASH!");
+                    //console.log("SMASH!");
                     this.splitRock(height, r);
                     this.ground.impact(r, collidePoint, debugHook);
                 } else {
                     // smaller rocks become part of the landscape
                     // TODO
-                    console.log("too small for crater");
+                    //console.log("too small for crater");
                 }
                 this.despawnRock(i);
             }
@@ -68,7 +68,7 @@ export class RockManager {
             // spawn above the screen at random x pos
             let startPoint = {x: Math.random() * width, y: -100};
             let size = Math.random() * (this.maxSize - this.minSize) + this.minSize;
-            let startVelocity = {x:0, y:0}; //{x: Math.random(), y: 0};
+            let startVelocity = {x: Math.random() * 2, y: 0};
             //console.log("spawning with size " + size);
             this.spawnRock(height, startPoint, startVelocity, size)
         }

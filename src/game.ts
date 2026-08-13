@@ -46,7 +46,7 @@ export class Game {
             app.renderer,
             this.playerLayer,
             this.landscape,
-            {x: app.screen.width/2, y: app.screen.height - GROUND_LEVEL},  // position
+            {x: app.screen.width/4, y: app.screen.height - GROUND_LEVEL},  // position
             20);  // size
         this.app.stage.addChild(this.playerLayer);
 
@@ -83,9 +83,9 @@ export class Game {
         }
 
         this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
-        this.landscape.update(this.app.screen.width);
-        this.tank.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
-        //this.debugInfo.update(app.screen.width, app.screen.height);
+        let scroll = this.tank.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        this.landscape.update(this.app.screen.width, scroll);
+        this.debugInfo.update(this.app.screen.width, this.app.screen.height);
     }
 
 }

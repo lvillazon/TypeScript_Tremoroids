@@ -14,16 +14,39 @@ export class Landscape {
         this.displayLayer = layer;
         this.displayLayer.addChild(this.surfaceLine.image);
         this.groundHeight = groundHeight;
-        this.outline.push({x: -windowWidth, y: groundHeight});
+        this.outline.push({x: 0, y: groundHeight});
         this.outline.push({x: windowWidth, y: groundHeight});
     }
 
-    update(width: number) {
-        this.surfaceLine.clear();
-        if (width > this.outline[this.outline.length-1].x) {
-            // add a new point to make sure the landscape always reaches to the end of the screen
-            this.outline.push({x: width, y: this.groundHeight});
+    update(width: number, scroll: number) {
+        // scroll the landscape
+        let i = 0;
+        for (i=0; i<this.outline.length; i++) {
+            this.outline[i].x = this.outline[i].x - scroll;
         }
+        // remove any points that no longer affect the visible terrain
+        // ie points whose righthand neighbour is also offscreen
+        i=0
+        let pointsToRemove = 0;
+        while (i<this.outline.length-1 && this.outline[i+1].x < 0) {
+            pointsToRemove++;
+            i++;
+        }
+        for (i=0; i<pointsToRemove; i++) {
+            this.outline.shift();
+        }
+
+        if (this.outline[this.outline.length-1].x < width) {
+            // add a new point to make sure the landscape always reaches to the end of the screen
+            this.outline.push({
+                x: Math.floor(width / 10)*11, 
+                y: this.groundHeight + Math.random() * 10
+            }); 
+        }
+
+        // redraw the ground surface
+        this.surfaceLine.clear();
+        this.surfaceLine.moveTo(0, this.outline[0].y);
         for (let i=0; i<this.outline.length; i++) {
             this.surfaceLine.lineTo(this.outline[i].x, this.outline[i].y);
         }
@@ -33,7 +56,7 @@ export class Landscape {
         return this.groundHeight;
     }
 
-    private heightAt(x: number): number {
+    public heightAt(x: number): number {
         if (this.outline.length <= 2) {  // landscape is just a flat line
             return this.groundHeight;
         }
@@ -48,10 +71,6 @@ export class Landscape {
         const p2 = this.outline[i];
         const slope = (p2.y - p1.y) / (p2.x - p1.x);
         return p1.y + (slope * (x - p1.x));  // y = mx + x
-    }
-
-    public absoluteHeightAt(x: number): number {
-        return this.heightAt(x);
     }
 
     impact(impactor: Rock, impactPoint: PointData, debugHook: Debugger) {
