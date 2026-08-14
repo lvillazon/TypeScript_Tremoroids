@@ -82,9 +82,9 @@ export class Game {
             this.tank.right();
         }
 
-        this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        //this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
         let scroll = this.tank.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
-        this.landscape.update(this.app.screen.width, scroll);
+        this.landscape.testUpdate(this.app.screen.width, scroll);
         this.debugInfo.update(this.app.screen.width, this.app.screen.height);
     }
 

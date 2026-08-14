@@ -59,6 +59,7 @@ export class Tank {
         this.frontContactPoint = {x: size * 1.6, y: 0};
         this.centerContactPoint = {x: 0, y: 0};
         this.backContactPoint = {x: size * -1.6, y: 0};
+        this.sprite.origin.set(this.backContactPoint.x, this.backContactPoint.y);
         this.landscapeX = 0;
         this.velocity = {x: 0, y: 0};
         this.frameNumber = 0;
@@ -194,26 +195,10 @@ export class Tank {
         const frontHeight = this.ground.heightAt(this.absoluteFrontContactPoint.x);
         const centerHeight = this.ground.heightAt(this.absoluteCenterContactPoint.x);
         const backHeight = this.ground.heightAt(this.absoluteBackContactPoint.x);
-        if ((this.absoluteFrontContactPoint.y < frontHeight) 
-            && (this.absoluteCenterContactPoint.y < centerHeight)
-            && (this.absoluteBackContactPoint.y >= backHeight)) {
-
-            this.sprite.rotation += 0.01;
+        if (this.absoluteFrontContactPoint.y > frontHeight) {
+            this.sprite.origin.set(this.backContactPoint.x, this.backContactPoint.y);
+            this.sprite.rotation -= 0.01;
         }
-
-        else if ((this.absoluteFrontContactPoint.y > frontHeight) 
-            && (this.absoluteCenterContactPoint.y >= centerHeight)) {
-
-            this.sprite.rotation += 0.01;
-        }
-
-        else if ((this.absoluteBackContactPoint.y < backHeight) 
-            && (this.absoluteCenterContactPoint.y < centerHeight)
-            && (this.absoluteFrontContactPoint.y >= frontHeight)) {
-
-            this.sprite.rotation += 0.01;
-        }
-
 
         this.recalculateRotationPoints();
         
@@ -236,19 +221,23 @@ export class Tank {
     private recalculateRotationPoints() {
         // rotate the front and rear points around the center point
         const theta = this.sprite.rotation;
+        const absoluteOrigin = {
+            x: this.screenPosition.x + this.sprite.origin.x,
+            y: this.screenPosition.y + this.sprite.origin.y
+        };
         this.absoluteFrontContactPoint = this.rotateToAbsoluteCoordinates(
             this.frontContactPoint,
-            this.screenPosition,
+            absoluteOrigin,
             theta
         )
         this.absoluteCenterContactPoint = this.rotateToAbsoluteCoordinates(
             this.centerContactPoint,
-            this.screenPosition,
+            absoluteOrigin,
             theta
         )
         this.absoluteBackContactPoint = this.rotateToAbsoluteCoordinates(
             this.backContactPoint,
-            this.screenPosition,
+            absoluteOrigin,
             theta
         )
     }
