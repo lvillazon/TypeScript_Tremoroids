@@ -3,6 +3,7 @@ import { RockManager } from "./rock_manager";
 import { Landscape } from "./landscape";
 import { Tank } from "./tank";
 import { Debugger } from "./debug";
+import { CrossHairs } from "./crosshairs";
 
 const GROUND_LEVEL = 450;
 const MAX_ROCKS = 5;
@@ -18,6 +19,8 @@ export class Game {
     private landscape: Landscape;
     private playerLayer: Container;
     private tank: Tank;
+    private shootingLayer: Container;
+    private crosshairs: CrossHairs;
     private debugInfo: Debugger;
     private debugLayer: Container;
     private paused = false;
@@ -50,6 +53,10 @@ export class Game {
             20);  // size
         this.app.stage.addChild(this.playerLayer);
 
+        this.shootingLayer = new Container();
+        this.crosshairs = new CrossHairs(this.shootingLayer, 15);
+        this.app.stage.addChild(this.shootingLayer);
+
         this.debugLayer = new Container();
         this.debugInfo = new Debugger(this.debugLayer, this.rockManager);
         this.app.stage.addChild(this.debugLayer);
@@ -63,6 +70,15 @@ export class Game {
         });
         window.addEventListener("keyup", (event) => {
             this.keys.delete(event.code);
+        });
+
+
+        // mouse handler
+        this.app.stage.eventMode = "static";
+        this.app.stage.hitArea = this.app.screen;
+        this.app.stage.on('pointermove', (event) => {
+            const mouse = event.global;
+            this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
         });
 
     }

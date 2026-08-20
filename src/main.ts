@@ -9,6 +9,7 @@ async function main(): Promise<void> {
       background: "#000000",
   });
   document.body.style.margin = "0";
+  document.body.style.cursor = "none";
   document.body.appendChild(app.canvas);
 
   // instantiate the game controller
