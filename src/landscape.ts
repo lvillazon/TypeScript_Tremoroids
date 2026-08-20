@@ -52,7 +52,7 @@ export class Landscape {
         }
     }
 
-    // fixed terrain to test tank movement
+    // a non-random, fixed terrain to test tank movement
     testUpdate(width: number, scroll: number) {
         // scroll the landscape
         let i = 0;

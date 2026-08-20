@@ -22,10 +22,15 @@ calculate the height of the landscape. If that point on the landscape lies withi
 of the rock, then we trigger a collision.
 
 3. tank:rock collisions
-If the tank bounding box collides with a rock, the tank explodes.
+TODO: If the tank bounding box collides with a rock, the tank explodes.
 
 4. tank:landscape collisions
-TBD
+We check the ground height at a point just in front and below the the tank tread
+When the ground rises above this point, we calculate the slope from the back
+to the front wheel and rotate the tank to match this angle. If this leaves the
+center point between the wheels in the air, we apply accelleration due to gravity
+to bring it down again. The tank gets stuck if the upward slope exceeds a threshold
+
 
 Craters & debris
 Rocks above a threshold size create a crater that is based on the outline of the bottom 

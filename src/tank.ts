@@ -7,9 +7,22 @@ import type { Landscape } from "./landscape";
 
 const ANIMATION_FRAMES = 5;
 const SPEED = 1;
+const GRAVITY = 0.02;
 
-function distanceBetween(point1: PointData, point2:PointData) {
+function distanceBetween(point1: PointData, point2:PointData): number {
     return Math.sqrt(((point1.x - point2.x) **2) + ((point1.y - point2.y) **2));
+}
+    
+function toRadians(angle: number): number {
+    return angle * Math.PI / 180;
+}
+
+function slope(point1: PointData, point2: PointData): number {
+    // gradient of the line connecting these points   
+    const xDiff = point1.x - point2.x;
+    const yDiff = point1.y - point2.y;
+    const slope = (yDiff==0) ? Infinity : yDiff / xDiff;
+    return slope;
 }
 
 export class Tank {
@@ -23,12 +36,10 @@ export class Tank {
     private barrelAngle: number;
     private size: number;
     private trackSpacing: number;
-    private readonly frontContactPoint: PointData;  // used for determining the tank's angle wrt the ground
-    private readonly centerContactPoint: PointData;
-    private readonly backContactPoint: PointData;
-    private absoluteFrontContactPoint: PointData = {x:0, y:0};
-    private absoluteCenterContactPoint: PointData = {x:0, y:0};
-    private absoluteBackContactPoint: PointData = {x:0, y:0};
+    private centerContactPoint: PointData;
+    private centerOfGravity: PointData;  // in local coords
+    private frontWheel: PointData;
+    private backWheel: PointData;
 
     private frames: Texture[] = [];
     private frameNumber: number;
@@ -41,7 +52,7 @@ export class Tank {
         this.ground = ground;
         this.size = size;
         this.trackSpacing = size/3;
-        this.barrelAngle = this.toRadians(-30);  // in degrees
+        this.barrelAngle = toRadians(-30);  // in degrees
         for (let f=0; f<ANIMATION_FRAMES; f++) {
             const image = this.drawTankFrame(f);
             this.frames.push(
@@ -50,22 +61,24 @@ export class Tank {
             image.destroy();  // explicitly release GPU resources used by Pixi
         }
         this.sprite = new Sprite(this.frames[0]);
-        this.sprite.anchor.set(0.5, 1.0);  // move the translation/rotation achor to the middle of the bottom edged
+        this.sprite.anchor.set(0.5, 1);  // explicitly set the translation/drawing achor to the bottom? left corner
         this.displayLayer.addChild(this.sprite);
         this.rotationSpeed = 0;
         this.screenPosition = {x: position.x, y: position.y};
         this.oldPosition = {x: this.screenPosition.x, y: this.screenPosition.y};
         // [-1.6, -0.55, 0.55, 1.6]
-        this.frontContactPoint = {x: size * 1.6, y: 0};
         this.centerContactPoint = {x: 0, y: 0};
-        this.backContactPoint = {x: size * -1.6, y: 0};
-        this.sprite.origin.set(this.backContactPoint.x, this.backContactPoint.y);
+        this.centerOfGravity = {x: 0, y: -size};
+        this.frontWheel = {x: size * 2.0, y: size * 0.1};
+        this.backWheel = {x: size * -2.0, y: size * -0.1};
+        this.sprite.origin.set(this.centerOfGravity.x, this.centerOfGravity.y);
         this.landscapeX = 0;
         this.velocity = {x: 0, y: 0};
         this.frameNumber = 0;
     }
 
     private drawTankFrame(frameNumber: number): Graphics {
+        // procedurally draw the tank frames so we can create sprite textures
         const tank_image_detail = 5;  // higher numbers mean more points in the tank graphic
         const rendered: Renderer = new Renderer();
 
@@ -156,33 +169,48 @@ export class Tank {
             rendered.lineTo(x + animationOffset * frameNumber, centre1.y - wheelRadius - trackLength);
         }
 
-        rendered.image.circle(0, 0, 3).fill({color: 0x00FFFF});  // DEBUG show centre
-
         return rendered.image;
     }
-    
-    private toRadians(angle: number): number {
-        return angle * Math.PI / 180;
-    }
 
-    // private toDegrees(angle: number): number {
-    //     return angle * 180 / Math.PI;
-    // }
+    public update(debugHook: Debugger) {
+        // calculate rotation to keep the tank on the terrain
+        // DEBUG test with different angles
+        //this.sprite.rotation = toRadians(0);
+        
+        // convert the key reference points on the tank from local to screen coords
+        const absoluteCoG = this.absoluteCoords(this.centerOfGravity);
+        const absoluteFrontWheel = this.absoluteCoords(this.frontWheel);
+        const absoluteBackWheel = this.absoluteCoords(this.backWheel);
+        const absoluteCenterContact = this.absoluteCoords(this.centerContactPoint);
 
-    public update(width: number, height: number, interval: number, debugHook: Debugger) {
-        // this.rendered.image.rotation += this.rotationSpeed * interval;
-        // this.velocity.y += GRAVITY;
-        this.velocity.x = SPEED;
+        // when ground tries to rise heigher than the front contact point
+        // rotate the tank to meet the slope
+        const heightAtFrontWheel = this.ground.heightAt(absoluteFrontWheel.x);
+        if (heightAtFrontWheel < absoluteFrontWheel.y) {
+            const newTankSlope = slope(
+                absoluteBackWheel,
+                {x: absoluteFrontWheel.x, y: heightAtFrontWheel});
+            if (newTankSlope < -0.6) {
+                this.velocity = {x:0, y:0};  // too steep to carry on
+            } else {
+                this.sprite.rotation = Math.atan(newTankSlope);
+                this.velocity.x = SPEED * Math.cos(this.sprite.rotation);
+                this.velocity.y = SPEED * Math.sin(this.sprite.rotation);
+            }
+
+        } 
+        // if there is fresh air under the tank, let it fall
+        else if (this.ground.heightAt(absoluteCenterContact.x) > absoluteCenterContact.y-1) {
+            this.velocity.y += GRAVITY;        
+        }
+
         this.landscapeX += this.velocity.x;
         this.screenPosition.y += this.velocity.y;
+        // update the tank animation if we have travelled far enough
         let distanceTravelled = distanceBetween(
             {x: this.landscapeX, y: this.screenPosition.y}, 
             this.oldPosition
         );
-        // console.log(
-        //     "old:" + this.oldPosition.x + ", " + this.oldPosition.y + 
-        //     " current:" + this.position.x + ", " + this.position.y + 
-        //     " distance ="+ distanceTravelled);
         if (distanceTravelled >= 1) {
             this.oldPosition = {x: this.screenPosition.x, y: this.screenPosition.y};
             this.frameNumber = (this.frameNumber + 1) % ANIMATION_FRAMES;
@@ -190,70 +218,33 @@ export class Tank {
         }
 
         this.sprite.position.set(this.screenPosition.x, this.screenPosition.y);
+
+        debugHook.drawLine(absoluteBackWheel, absoluteFrontWheel, 0x00FF00);        
+        debugHook.drawPoint(this.screenPosition, 0xFFFFFF);
+        debugHook.drawPoint(absoluteFrontWheel, 0x00FF00);
+        debugHook.drawPoint(absoluteCoG, 0xFFFF00);
+        debugHook.drawPoint(absoluteBackWheel, 0xFF0000);
         
-        // calculate rotation to keep the tank on the terrain
-        const frontHeight = this.ground.heightAt(this.absoluteFrontContactPoint.x);
-        const centerHeight = this.ground.heightAt(this.absoluteCenterContactPoint.x);
-        const backHeight = this.ground.heightAt(this.absoluteBackContactPoint.x);
-        if (this.absoluteFrontContactPoint.y > frontHeight) {
-            this.sprite.origin.set(this.backContactPoint.x, this.backContactPoint.y);
-            this.sprite.rotation -= 0.01;
-        }
-
-        this.recalculateRotationPoints();
-        
-        debugHook.drawPoint(this.screenPosition, 0xFF00FF);
-        debugHook.drawPoint(this.absoluteFrontContactPoint, 0x00FF00);
-        debugHook.drawPoint(this.absoluteCenterContactPoint, 0xFFFF00);
-        debugHook.drawPoint(this.absoluteBackContactPoint, 0xFF0000);
-        
-        return this.velocity.x;
+        return this.velocity.x;  // used to decide how much to scroll the landscape
     }
 
-    public left() {
-        this.velocity = {x: -SPEED, y: 0}
-    }
-
-    public right() {
-        this.velocity = {x: SPEED, y: 0}
-    }
-
-    private recalculateRotationPoints() {
-        // rotate the front and rear points around the center point
-        const theta = this.sprite.rotation;
-        const absoluteOrigin = {
-            x: this.screenPosition.x + this.sprite.origin.x,
-            y: this.screenPosition.y + this.sprite.origin.y
-        };
-        this.absoluteFrontContactPoint = this.rotateToAbsoluteCoordinates(
-            this.frontContactPoint,
-            absoluteOrigin,
-            theta
-        )
-        this.absoluteCenterContactPoint = this.rotateToAbsoluteCoordinates(
-            this.centerContactPoint,
-            absoluteOrigin,
-            theta
-        )
-        this.absoluteBackContactPoint = this.rotateToAbsoluteCoordinates(
-            this.backContactPoint,
-            absoluteOrigin,
-            theta
-        )
-    }
-
-    private rotateToAbsoluteCoordinates(point: PointData, center: PointData, angle: number): PointData{
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
+    private absoluteCoords(point: PointData): PointData {
+        // convert a point on the tank in local coords to screen coords
+        // tanking tank position and rotation into account
+        const sin = Math.sin(this.sprite.rotation);
+        const cos = Math.cos(this.sprite.rotation)
+        const ox = this.sprite.origin.x;
+        const oy = this.sprite.origin.y;
+        const x = point.x - ox;
+        const y = point.y - oy;
         return {
-            x: 
-                center.x 
-                + point.x * cos
-                - point.y * sin,
-            y:
-                center.y
-                + point.x * sin
-                + point.y * cos
+            x: this.screenPosition.x + ox
+               + x  * cos
+               - y * sin
+               ,
+            y: this.screenPosition.y + oy
+               + x * sin
+               + y * cos
         };
     }
 

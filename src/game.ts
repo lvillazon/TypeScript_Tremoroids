@@ -5,7 +5,7 @@ import { Tank } from "./tank";
 import { Debugger } from "./debug";
 
 const GROUND_LEVEL = 450;
-const MAX_ROCKS = 1;
+const MAX_ROCKS = 5;
 const MIN_ROCK_SIZE = 80;
 const MAX_ROCK_SIZE = 120;
 
@@ -46,7 +46,7 @@ export class Game {
             app.renderer,
             this.playerLayer,
             this.landscape,
-            {x: app.screen.width/4, y: app.screen.height - GROUND_LEVEL},  // position
+            {x: app.screen.width*1/4, y: app.screen.height - GROUND_LEVEL},  // position
             20);  // size
         this.app.stage.addChild(this.playerLayer);
 
@@ -75,17 +75,11 @@ export class Game {
         if (this.keys.has("Space")) {
             this.paused = !this.paused;
         }
-        if (this.keys.has("KeyZ")) {
-            this.tank.left();
-        }
-        if (this.keys.has("KeyX")) {
-            this.tank.right();
-        }
 
-        //this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
-        let scroll = this.tank.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
-        this.landscape.testUpdate(this.app.screen.width, scroll);
-        this.debugInfo.update(this.app.screen.width, this.app.screen.height);
+        this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        let scroll = this.tank.update(this.debugInfo);
+        this.landscape.update(this.app.screen.width, scroll);
+        //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
     }
 
 }

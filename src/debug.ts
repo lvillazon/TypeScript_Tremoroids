@@ -2,12 +2,14 @@ import { Container, Graphics, type PointData } from "pixi.js";
 import type { RockManager } from "./rock_manager";
 
 const DEBUG_COLOR = 0xff0000;
+const MAX_DEBUG_POINTS = 5;
 
 export class Debugger {
     private rockManager: RockManager;
     private displayLayer: Container;
     private display: Graphics = new Graphics();
     private deferredPoints: {point: PointData; color: number}[] = [];
+    private deferredLines: {p1: PointData; p2: PointData; color: number}[] = [];
 
     constructor(displayLayer: Container, rockManager: RockManager) {
         this.rockManager = rockManager;
@@ -50,14 +52,27 @@ export class Debugger {
                 .fill(this.deferredPoints[i].color);
         }
 
+        // draw any lines that have been added from other modules
+        // unlike points, the list is wiped once the lines have been drawn
+        // so they must be requested again each frame
+        for (let i=0; i<this.deferredLines.length; i++) {
+            this.display.moveTo(this.deferredLines[i].p1.x, this.deferredLines[i].p1.y)
+            this.display.lineTo(this.deferredLines[i].p2.x, this.deferredLines[i].p2.y)
+                .stroke({width: 2, color: this.deferredLines[i].color});
+        }
+        this.deferredLines = [];
     }
 
     drawPoint(p: PointData, color: number) {
         // add a point to the list to be drawn on the next update
-        const MAX_DEBUG_POINTS = 3;
         while (this.deferredPoints.length >= MAX_DEBUG_POINTS) {
             this.deferredPoints.shift();
         }
         this.deferredPoints.push({point: p, color: color});
+    }
+
+    drawLine(p1: PointData, p2: PointData, color: number) {
+        // add a line to the list to be drawn on the next update
+        this.deferredLines.push({p1: p1, p2: p2, color: color});
     }
 }
