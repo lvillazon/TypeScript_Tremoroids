@@ -4,6 +4,7 @@ import { Landscape } from "./landscape";
 import { Tank } from "./tank";
 import { Debugger } from "./debug";
 import { CrossHairs } from "./crosshairs";
+import { ShotManager } from "./shot_manager";
 
 const GROUND_LEVEL = 450;
 const MAX_ROCKS = 5;
@@ -21,6 +22,7 @@ export class Game {
     private tank: Tank;
     private shootingLayer: Container;
     private crosshairs: CrossHairs;
+    private shotManager: ShotManager;
     private debugInfo: Debugger;
     private debugLayer: Container;
     private paused = false;
@@ -35,14 +37,12 @@ export class Game {
             app.screen.height - GROUND_LEVEL, 
             app.screen.width,
         );
-        this.app.stage.addChild(this.landscapeLayer);
 
         this.rockLayer = new Container();
         this.rockManager = new RockManager(
             this.rockLayer, 
             this.landscape, 
             MAX_ROCKS, MIN_ROCK_SIZE, MAX_ROCK_SIZE);
-        this.app.stage.addChild(this.rockLayer);
 
         this.playerLayer = new Container();
         this.tank = new Tank(
@@ -51,15 +51,21 @@ export class Game {
             this.landscape,
             {x: app.screen.width*1/4, y: app.screen.height - GROUND_LEVEL},  // position
             20);  // size
-        this.app.stage.addChild(this.playerLayer);
 
         this.shootingLayer = new Container();
         this.crosshairs = new CrossHairs(this.shootingLayer, 15);
-        this.app.stage.addChild(this.shootingLayer);
+        this.shotManager = new ShotManager(this.shootingLayer, this.landscape, 100);
 
         this.debugLayer = new Container();
         this.debugInfo = new Debugger(this.debugLayer, this.rockManager);
+
+        // add all the layers in the right order, from background to foreground
+        this.app.stage.addChild(this.landscapeLayer);
+        this.app.stage.addChild(this.rockLayer);
+        this.app.stage.addChild(this.shootingLayer);
+        this.app.stage.addChild(this.playerLayer);
         this.app.stage.addChild(this.debugLayer);
+
 
         this.app.ticker.add((ticker) => this.update(ticker.deltaTime));
 
@@ -80,7 +86,9 @@ export class Game {
             const mouse = event.global;
             this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
         });
-
+        this.app.stage.on('pointerdown', (event) => {
+            this.shotManager.spawnShot(this.tank.getFiringSolution());
+        });
     }
 
     private update(deltaTime: number) {
@@ -93,9 +101,10 @@ export class Game {
         }
 
         this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
-        let scroll = this.tank.update(this.debugInfo);
+        this.shotManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        let scroll = this.tank.update(this.crosshairs.position, this.debugInfo);
         this.landscape.update(this.app.screen.width, scroll);
-        //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
+        this.debugInfo.update(this.app.screen.width, this.app.screen.height);
     }
 
 }

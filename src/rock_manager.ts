@@ -17,7 +17,6 @@ export class RockManager {
     private ground: Landscape;
     
     constructor(layer: Container, ground: Landscape, maxRocks: number, minSize:number, maxSize:number) {
-        console.log("rock size =" + minSize + " - " + maxSize);
         this.displayLayer = layer;
         this.maxRocks = maxRocks;
         this.minSize = minSize;

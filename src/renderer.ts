@@ -23,8 +23,16 @@ export class Renderer {
     }
 
     public poly(points: PointData[]) {
+        this.generalPoly(points, true);
+    }
+    
+    public polyLine(points: PointData[]) {
+        this.generalPoly(points, false);
+    }
+    
+    private generalPoly(points: PointData[], closed: boolean) {
         this.image
-            .poly(points)
+            .poly(points, closed)
             .fill({
             color: this.BACKGROUND,
             })
@@ -33,7 +41,7 @@ export class Renderer {
             color: this.GLOW_COLOR,
             });
         this.image
-            .poly(points)
+            .poly(points, closed)
             .stroke({
             width: this.LINE_WIDTH,
             color: this.LINE_COLOR,

@@ -47,9 +47,10 @@ export class Landscape {
         // redraw the ground surface
         this.surfaceLine.clear();
         this.surfaceLine.moveTo(0, this.outline[0].y);
-        for (let i=0; i<this.outline.length; i++) {
-            this.surfaceLine.lineTo(this.outline[i].x, this.outline[i].y);
-        }
+        this.surfaceLine.polyLine(this.outline);
+        // for (let i=0; i<this.outline.length; i++) {
+        //     this.surfaceLine.lineTo(this.outline[i].x, this.outline[i].y);
+        // }
     }
 
     // a non-random, fixed terrain to test tank movement
