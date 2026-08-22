@@ -38,7 +38,7 @@ export class RockManager {
             r.update(interval);
 
             // collision check with the ground
-            const collidePoint = r.collidesWith(this.ground, debugHook);
+            const collidePoint = r.collidesWithGround(this.ground, debugHook);
             if (collidePoint != null) {
                 console.log("colliding");
                 if (r.radius > SHATTER_RADIUS) {
@@ -51,12 +51,12 @@ export class RockManager {
                     // TODO
                     //console.log("too small for crater");
                 }
-                this.despawnRock(i);
+                this.despawnRockByIndex(i);
             }
 
             // remove any rocks that escaped hitting the ground and fell through the screen
             if (r.altitude() < 0) {
-                this.despawnRock(i);
+                this.despawnRockByIndex(i);
             }
         }
 
@@ -99,7 +99,7 @@ export class RockManager {
         this.displayLayer.addChild(r.rendered.image);
     }
 
-    private despawnRock(rockNumber: number) {
+    public despawnRockByIndex(rockNumber: number) {
         // remove graphical part from the scene
         this.displayLayer.removeChild(this.rocks[rockNumber].rendered.image);
         // remove from the rocks array by replacing it with a copy of the last rock
@@ -108,7 +108,28 @@ export class RockManager {
         this.rocks.pop();
     }
 
+    public despawnRock(r: Rock) {
+        if (r==null) return;
+        let i=0;
+        while (i<this.rocks.length && r != this.rocks[i]) {
+            i++;
+        }
+        this.despawnRockByIndex(i);
+    }
+
     rockSpawnChance(): boolean {
         return (Math.random() < SPAWN_CHANCE);
+    }
+
+    public findCollision(position: PointData): Rock | null {
+        // return the first rock that collisdes with this point, or null if none
+        let i = 0;
+        while (i<this.rocks.length) {
+            if (this.rocks[i].collidesWithPoint(position)) {
+                return this.rocks[i];
+            }
+            i++;
+        }
+        return null;
     }
 }

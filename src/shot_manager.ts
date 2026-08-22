@@ -6,7 +6,7 @@ import { Debugger } from "./debug";
 
 export class ShotManager {
     private displayLayer: Container;
-    private shots: Shot[] = [];
+    public shots: Shot[] = [];
     private maxShots: number;
     private ground: Landscape;
     
@@ -20,10 +20,6 @@ export class ShotManager {
         for(let i=0; i<this.shots.length; i++) {
             let s = this.shots[i];
             s.update(interval);
-
-            // collision check with the ground
-            // collision check with rocks
-            // bounds check with the screen
         }
     }
 
@@ -38,7 +34,7 @@ export class ShotManager {
         this.displayLayer.addChild(s.rendered.image);
     }
 
-    private despawnShot(shotNumber: number) {
+    public despawnShot(shotNumber: number) {
         // remove graphical part from the scene
         this.displayLayer.removeChild(this.shots[shotNumber].rendered.image);
         // remove from the shots array by replacing it with a copy of the last rock

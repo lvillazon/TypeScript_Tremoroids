@@ -86,7 +86,7 @@ export class Game {
             const mouse = event.global;
             this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
         });
-        this.app.stage.on('pointerdown', (event) => {
+        this.app.stage.on('pointerdown', () => {
             this.shotManager.spawnShot(this.tank.getFiringSolution());
         });
     }
@@ -102,9 +102,31 @@ export class Game {
 
         this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
         this.shotManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        this.checkShotImpacts();
+        
         let scroll = this.tank.update(this.crosshairs.position, this.debugInfo);
         this.landscape.update(this.app.screen.width, scroll);
-        this.debugInfo.update(this.app.screen.width, this.app.screen.height);
+        //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
+    }
+
+    private checkShotImpacts() {
+        for (let i=this.shotManager.shots.length-1; i>=0; i--) {  // backwards to avoid skipping on despawn
+            const p = this.shotManager.shots[i].position();
+
+            // collision check with the ground
+            // collision check with rocks
+            const rock = this.rockManager.findCollision(p);
+            if (rock) {
+                this.shotManager.despawnShot(i);
+                this.rockManager.splitRock(this.app.screen.height, rock);
+                this.rockManager.despawnRock(rock);
+            }
+            
+            // bounds check with the screen
+            if (p.x > this.app.screen.width || p.x < 0 || p.y > this.app.screen.height || p.y < 0) {
+                this.shotManager.despawnShot(i);
+            }
+        }
     }
 
 }

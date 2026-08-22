@@ -115,7 +115,7 @@ export class Rock {
         return this.maxAltitude - this.lowestPoint();
     }
 
-    public collidesWith(ground: Landscape, debugHook: Debugger): PointData | null {
+    public collidesWithGround(ground: Landscape, debugHook: Debugger): PointData | null {
         // check if any of the points in the array are inside this rock
         // let absolutePoints: PointData[] = [];
         // for (let i=0; i<this.outline.points.length; i++) {
@@ -131,5 +131,9 @@ export class Rock {
             }
         }
         return null;
+    }
+
+    public collidesWithPoint(point: PointData): boolean {
+        return this.absoluteOutline().contains(point.x, point.y);
     }
 }
