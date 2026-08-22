@@ -1,21 +1,22 @@
 // all projectiles fired by the tank
-import { Polygon, type PointData } from "pixi.js";
+import { type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
 
-const GRAVITY = 0.02;
+const GRAVITY = 0.04;
 
 export class Shot {
     public rendered: Renderer;
     public velocity: PointData;
-    private outline: Polygon;
+    public size: number;
 
     public constructor(
         startPoint: PointData, 
         size: number, 
         startSpeed: number, 
         elevation: number) {
-
+        
+        this.size = size;
         this.rendered = new Renderer();
         const points: PointData[] = [
             {x: 0.0       , y: 0.0},
@@ -28,7 +29,6 @@ export class Shot {
             {x: size      , y: 0.6 * size},
             {x: size      , y: 0.0}
         ];
-        this.outline = new Polygon(points);
         this.rendered.poly(points);
 
         this.rendered.image.position.copyFrom(startPoint);

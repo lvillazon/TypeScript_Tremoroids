@@ -1,8 +1,11 @@
 // stars and the ground outline
 import { Rock } from "./rocks";
+import { Shot } from "./shots";
 import { Container, type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
+
+const ROUGHNESS = 0.1;
 
 export class Landscape {
     private displayLayer: Container;
@@ -123,17 +126,33 @@ export class Landscape {
         return p1.y + (slope * (x - p1.x));  // y = mx + x
     }
 
-    impact(impactor: Rock, impactPoint: PointData, debugHook: Debugger) {
-        // make a dent in the landscape due to this rock
-        let craterRadius = impactor.radius;
-        let craterDepth = impactor.radius;
+    public collidesWithPoint(point: PointData) {
+        // check if this point is below the ground surface
+        return point.y > this.heightAt(point.x);
+    }
 
-        // the shape of the rock facing the ground provides the starting point for the crater
-        const craterPoints = impactor.getBottomOutline();
+    public impact(impactor: Rock | Shot, impactPoint: PointData, debugHook: Debugger) {
+        // make a dent in the landscape due to this rock
+        let craterRadius = impactor.size;
+        let craterDepth = impactor.size;
+
+        // create an irregular crater shape
+        const craterPoints: PointData[] = [];
+        const number_of_points = Math.max(craterRadius /10, 5);  // need at least 5 points
+        let wiggle = 0.1;
+        for (let i=0; i<number_of_points; i++) {
+            let theta = Math.PI * i / (number_of_points-1);
+            wiggle = Math.random() * ROUGHNESS
+            const x = impactPoint.x + craterRadius * Math.cos(theta) + wiggle;
+            const y = impactPoint.y + craterDepth * Math.sin(theta) + wiggle;
+            let p: PointData = {x, y};
+            craterPoints.push(p);
+        }
+        debugHook.drawPoly(craterPoints, 0xFF0000);
         
         // add a point either side to define the crater edges
-        const leftX = impactor.position.x - 2* craterRadius;
-        const rightX = impactor.position.x + 2 * craterRadius;
+        const leftX = impactPoint.x - 2* craterRadius;
+        const rightX = impactPoint.x + 2 * craterRadius;
         const leftPoint: PointData = {x: leftX, y: this.heightAt(leftX)};
         const rightPoint: PointData = {x: rightX, y: this.heightAt(rightX)};
         this.outline.push(leftPoint);

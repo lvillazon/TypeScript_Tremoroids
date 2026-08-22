@@ -11,10 +11,12 @@ export class Renderer {
     private LINE_WIDTH = 2;
     public image: Graphics;
     private cursorPos: PointData;
+    public style: String;
     
     public constructor() {
         this.image = new Graphics();
         this.cursorPos = {x: 0, y: 0};
+        this.style = "vector";
     }
 
     public clear() {
@@ -31,41 +33,94 @@ export class Renderer {
     }
     
     private generalPoly(points: PointData[], closed: boolean) {
-        this.image
-            .poly(points, closed)
-            .fill({
-            color: this.BACKGROUND,
-            })
-            .stroke({
-            width: this.GLOW_WIDTH,
-            color: this.GLOW_COLOR,
-            });
-        this.image
-            .poly(points, closed)
-            .stroke({
-            width: this.LINE_WIDTH,
-            color: this.LINE_COLOR,
-            });
-        for (let i=0; i<points.length; i++) {
-            this.image
-                .circle(points[i].x, points[i].y, this.VERTEX_SIZE)
-                .fill({color: this.VERTEX_COLOR});
+        switch (this.style) {
+            case "none": {
+                this.image
+                    .poly(points, closed)
+                    .stroke({
+                    width: this.LINE_WIDTH,
+                    color: this.LINE_COLOR,
+                    });
+                break;
+            }
+            case "chunky": {
+                this.image
+                    .poly(points, closed)
+                    .fill({
+                    color: this.BACKGROUND,
+                    })
+                    .stroke({
+                    width: this.LINE_WIDTH * 2,
+                    color: this.LINE_COLOR,
+                    cap: "round",
+                    join: "round"
+                    });
+                break;
+            }
+            case "vector": {
+                this.image
+                    .poly(points, closed)
+                    .fill({
+                    color: this.BACKGROUND,
+                    })
+                    .stroke({
+                    width: this.GLOW_WIDTH,
+                    color: this.GLOW_COLOR,
+                    });
+                this.image
+                    .poly(points, closed)
+                    .stroke({
+                    width: this.LINE_WIDTH,
+                    color: this.LINE_COLOR,
+                    });
+                for (let i=0; i<points.length; i++) {
+                    this.image
+                        .circle(points[i].x, points[i].y, this.VERTEX_SIZE)
+                        .fill({color: this.VERTEX_COLOR});
+                }
+
+            }
         }
     }
 
     public circle(x: number, y: number, radius: number) {
-        this.image
-            .circle(x, y, radius)
-            .stroke({
-            width: this.GLOW_WIDTH,
-            color: this.GLOW_COLOR,
-            });
-        this.image
-            .circle(x, y, radius)
-            .stroke({
-            width: this.LINE_WIDTH,
-            color: this.LINE_COLOR,
-            });
+        switch (this.style) {
+            case "none": {
+                this.image
+                    .circle(x, y, radius)
+                    .stroke({
+                    width: this.LINE_WIDTH,
+                    color: this.LINE_COLOR,
+                    });
+                break;
+            }
+            case "chunky": {
+                this.image
+                    .circle(x, y, radius)
+                    .stroke({
+                    width: this.LINE_WIDTH * 2,
+                    color: this.LINE_COLOR,
+                    cap: "round",
+                    join: "round"
+                    });
+                break;
+            }
+            case "vector": {
+                this.image
+                    .circle(x, y, radius)
+                    .stroke({
+                    width: this.GLOW_WIDTH,
+                    color: this.GLOW_COLOR,
+                    });
+                this.image
+                    .circle(x, y, radius)
+                    .stroke({
+                    width: this.LINE_WIDTH,
+                    color: this.LINE_COLOR,
+                    });
+                break;
+            }
+        }
     }
 
     public moveTo(x: number, y: number) {
@@ -73,19 +128,44 @@ export class Renderer {
     }
 
     public lineTo(x: number, y: number) {
-        this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
-        this.image.lineTo(x, y).stroke ({
-            width: this.GLOW_WIDTH,
-            color: this.GLOW_COLOR,
-        });
-        this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
-        this.image.lineTo(x, y).stroke({
-            width: this.LINE_WIDTH,
-            color: this.LINE_COLOR,
-            });
-        this.image
-            .circle(x, y, this.VERTEX_SIZE)
-            .fill({color: this.VERTEX_COLOR});
-        this.moveTo(x, y);
+        switch (this.style) {
+            case "none": {
+                this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
+                this.image.lineTo(x, y).stroke({
+                    width: this.LINE_WIDTH,
+                    color: this.LINE_COLOR,
+                    });
+                this.moveTo(x, y);
+                break;
+            }
+            case "chunky": {
+                this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
+                this.image.lineTo(x, y).stroke({
+                    width: this.LINE_WIDTH * 2,
+                    color: this.LINE_COLOR,
+                    cap: "round",
+                    join: "round"
+                    });
+                this.moveTo(x, y);
+                break;
+            }
+            case "vector": {
+                this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
+                this.image.lineTo(x, y).stroke ({
+                    width: this.GLOW_WIDTH,
+                    color: this.GLOW_COLOR,
+                });
+                this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
+                this.image.lineTo(x, y).stroke({
+                    width: this.LINE_WIDTH,
+                    color: this.LINE_COLOR,
+                    });
+                this.image
+                    .circle(x, y, this.VERTEX_SIZE)
+                    .fill({color: this.VERTEX_COLOR});
+                this.moveTo(x, y);
+                break;
+            }
+        }
     }
 }

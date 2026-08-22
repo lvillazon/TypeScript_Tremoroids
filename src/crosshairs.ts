@@ -7,7 +7,6 @@ export class CrossHairs {
     private displayLayer: Container;
     private size: number;
     private rendered: Renderer;
-    public position: PointData = {x:0, y:0};
     
     public constructor(layer: Container, size: number) {
         this.displayLayer = layer;
@@ -34,7 +33,13 @@ export class CrossHairs {
     public update(point: PointData, debugHook: Debugger) {
         // crosshairs always follow the mouse
         this.rendered.image.position = point;
-        this.position = point;
+    }
+
+    public position(): PointData {
+        return {
+            x: this.rendered.image.position.x + this.size/2,
+            y: this.rendered.image.position.y + this.size/2
+        }
     }
 
 }

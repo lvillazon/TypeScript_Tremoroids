@@ -39,12 +39,12 @@ export class RockManager {
 
             // collision check with the ground
             const collidePoint = r.collidesWithGround(this.ground, debugHook);
-            if (collidePoint != null) {
+            if (collidePoint) {
                 console.log("colliding");
-                if (r.radius > SHATTER_RADIUS) {
+                if (r.size > SHATTER_RADIUS) {
                     // big rocks break into smaller ones
                     //console.log("SMASH!");
-                    this.splitRock(height, r);
+                    this.splitRock(r);
                     this.ground.impact(r, collidePoint, debugHook);
                 } else {
                     // smaller rocks become part of the landscape
@@ -55,7 +55,7 @@ export class RockManager {
             }
 
             // remove any rocks that escaped hitting the ground and fell through the screen
-            if (r.altitude() < 0) {
+            if (r.altitude() > height) {
                 this.despawnRockByIndex(i);
             }
         }
@@ -68,12 +68,11 @@ export class RockManager {
             let startPoint = {x: Math.random() * width, y: -100};
             let size = Math.random() * (this.maxSize - this.minSize) + this.minSize;
             let startVelocity = {x: Math.random() * 2, y: 0};
-            //console.log("spawning with size " + size);
-            this.spawnRock(height, startPoint, startVelocity, size)
+            this.spawnRock(startPoint, startVelocity, size)
         }
     }
 
-    splitRock(screenHeight: number, r: Rock) {
+    splitRock(r: Rock) {
         const MAX_FRAGMENTS = 5;
         // shatter this rock into smaller fragments that bounce away
         const numberofFragments = Math.ceil(Math.random() * MAX_FRAGMENTS);
@@ -81,17 +80,15 @@ export class RockManager {
             const v = r.velocity.x 
                 + (Math.random() * 2 * HORIZONTAL_VARIABILITY) - HORIZONTAL_VARIABILITY;
             this.spawnRock(
-                screenHeight, 
                 r.position, 
                 {x: v, y: -r.velocity.y / VERTICAL_DECAY}, 
                 // fragments can't be bigger than the original
-                Math.min(r.radius, r.radius * 2 / numberofFragments));
+                Math.min(r.size, r.size * 2 / numberofFragments));
         }
     }
 
-    spawnRock(screenHeight: number, position: PointData, velocity: PointData, radius: number) {
+    spawnRock(position: PointData, velocity: PointData, radius: number) {
         const r = new Rock(
-            screenHeight, 
             {x: position.x, y: position.y}, 
             {x: velocity.x, y: velocity.y}, 
             radius);

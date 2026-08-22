@@ -75,7 +75,7 @@ export class Tank {
         this.gunLength = this.size * 2.5;  // barrel length
         this.muzzlePosition = {x: 0, y: 0};
         this.gunElevation = 0;
-        this.gunPower = 10;
+        this.gunPower = 7;
 
         for (let f=0; f<ANIMATION_FRAMES; f++) {
             const image = this.drawTankFrame(f);
@@ -213,10 +213,13 @@ export class Tank {
         const dx = aimPoint.x - mount.x;
         const dy = aimPoint.y - mount.y;
         const absoluteAngle = Math.atan2(dy, dx);
-        this.gunElevation = Math.min(this.maxElevation, Math.max(this.minElevation,
-                            absoluteAngle - this.tankContainer.rotation));
-        
-        this.barrel.image.rotation = this.gunElevation;
+        // make sure gun barrel doesn't exceed elevation limits
+        this.barrel.image.rotation = 
+            Math.min(this.maxElevation, Math.max(this.minElevation, 
+                     absoluteAngle - this.tankContainer.rotation));
+        this.gunElevation = this.barrel.image.rotation 
+                            + this.tankContainer.rotation;
+
         //this.barrel.image.origin.set(0, 0);
         this.barrel.clear();
         this.barrel.moveTo(this.size, -this.gunCaliber);

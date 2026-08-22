@@ -5,8 +5,9 @@ import { Tank } from "./tank";
 import { Debugger } from "./debug";
 import { CrossHairs } from "./crosshairs";
 import { ShotManager } from "./shot_manager";
+import { TextManager } from "./text_renderer";
 
-const GROUND_LEVEL = 450;
+const GROUND_LEVEL = 150;
 const MAX_ROCKS = 5;
 const MIN_ROCK_SIZE = 80;
 const MAX_ROCK_SIZE = 120;
@@ -23,6 +24,8 @@ export class Game {
     private shootingLayer: Container;
     private crosshairs: CrossHairs;
     private shotManager: ShotManager;
+    private UILayer: Container;
+    private textManager: TextManager
     private debugInfo: Debugger;
     private debugLayer: Container;
     private paused = false;
@@ -54,7 +57,10 @@ export class Game {
 
         this.shootingLayer = new Container();
         this.crosshairs = new CrossHairs(this.shootingLayer, 15);
-        this.shotManager = new ShotManager(this.shootingLayer, this.landscape, 100);
+        this.shotManager = new ShotManager(this.shootingLayer);
+
+        this.UILayer = new Container();
+        this.textManager = new TextManager(this.UILayer);
 
         this.debugLayer = new Container();
         this.debugInfo = new Debugger(this.debugLayer, this.rockManager);
@@ -64,6 +70,7 @@ export class Game {
         this.app.stage.addChild(this.rockLayer);
         this.app.stage.addChild(this.shootingLayer);
         this.app.stage.addChild(this.playerLayer);
+        this.app.stage.addChild(this.UILayer);
         this.app.stage.addChild(this.debugLayer);
 
 
@@ -89,6 +96,9 @@ export class Game {
         this.app.stage.on('pointerdown', () => {
             this.shotManager.spawnShot(this.tank.getFiringSolution());
         });
+
+        // test text system
+        this.textManager.addLabel("123", {x:100, y:100}, 30);
     }
 
     private update(deltaTime: number) {
@@ -101,30 +111,37 @@ export class Game {
         }
 
         this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
-        this.shotManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        this.shotManager.update(deltaTime, this.debugInfo);
         this.checkShotImpacts();
         
-        let scroll = this.tank.update(this.crosshairs.position, this.debugInfo);
+        let scroll = this.tank.update(this.crosshairs.position(), this.debugInfo);
         this.landscape.update(this.app.screen.width, scroll);
         //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
     }
 
     private checkShotImpacts() {
         for (let i=this.shotManager.shots.length-1; i>=0; i--) {  // backwards to avoid skipping on despawn
-            const p = this.shotManager.shots[i].position();
+            const shot = this.shotManager.shots[i];
+            const p = shot.position();
 
             // collision check with the ground
-            // collision check with rocks
-            const rock = this.rockManager.findCollision(p);
-            if (rock) {
+            const groundImpact = this.landscape.collidesWithPoint(p);
+            if (groundImpact) {
+                this.landscape.impact(shot, p, this.debugInfo);
                 this.shotManager.despawnShot(i);
-                this.rockManager.splitRock(this.app.screen.height, rock);
-                this.rockManager.despawnRock(rock);
-            }
-            
-            // bounds check with the screen
-            if (p.x > this.app.screen.width || p.x < 0 || p.y > this.app.screen.height || p.y < 0) {
-                this.shotManager.despawnShot(i);
+            } else {
+                // collision check with rocks
+                const rock = this.rockManager.findCollision(p);
+                if (rock) {
+                    this.shotManager.despawnShot(i);
+                    this.rockManager.splitRock(rock);
+                    this.rockManager.despawnRock(rock);
+                } 
+                else
+                // bounds check with the screen
+                if (p.x > this.app.screen.width || p.x < 0 || p.y > this.app.screen.height || p.y < 0) {
+                    this.shotManager.despawnShot(i);
+                }
             }
         }
     }

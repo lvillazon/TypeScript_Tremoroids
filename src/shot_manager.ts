@@ -1,22 +1,17 @@
 import { FiringSolution } from "./tank";
 import { Shot } from "./shots";
-import { Landscape } from "./landscape";
-import { Container, type PointData } from "pixi.js";
+import { Container } from "pixi.js";
 import { Debugger } from "./debug";
 
 export class ShotManager {
     private displayLayer: Container;
     public shots: Shot[] = [];
-    private maxShots: number;
-    private ground: Landscape;
     
-    constructor(layer: Container, ground: Landscape, maxShots: number) {
+    constructor(layer: Container) {
         this.displayLayer = layer;
-        this.maxShots = maxShots;
-        this.ground = ground;
     }
 
-    update(width: number, height: number, interval: number, debugHook: Debugger) {
+    update(interval: number, debugHook: Debugger) {
         for(let i=0; i<this.shots.length; i++) {
             let s = this.shots[i];
             s.update(interval);

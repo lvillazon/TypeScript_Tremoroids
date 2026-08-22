@@ -13,33 +13,31 @@ export class Rock {
     public position: PointData;
     public rotationSpeed: number;
     private outline: Polygon;
-    private maxAltitude: number;
-    public radius: number;
+    public size: number;
 
-    public constructor(maxAltitude: number, position: PointData, velocity: PointData, radius: number) {
+    public constructor(position: PointData, velocity: PointData, size: number) {
         // the number of points in the outline is proportional to the radius
         this.rendered = new Renderer();
-        this.maxAltitude = maxAltitude;
         this.rotationSpeed = Math.random() / 25 - 0.02;
         let min_x = 0, max_x = 0, min_y = 0, max_y = 0;
-        this.radius = radius;
-        const number_of_points = Math.max(radius /10, 3);  // need at least 3 points
+        this.size = size;
+        const number_of_points = Math.max(size /10, 3);  // need at least 3 points
         const points: PointData[] = [];
         let wiggle = 0.5;
         for (let i=0; i<number_of_points; i++) {
-            let theta = 2 * Math.PI * i / (number_of_points + 1);
+            const theta = 2 * Math.PI * i / (number_of_points + 1);
             wiggle += Math.random() * (2 * ROUGHNESS) - ROUGHNESS;  // +/- roughness
-            let x = this.radius * Math.cos(theta) * wiggle;
-            let y = this.radius * Math.sin(theta) * wiggle;
+            const x = this.size * Math.cos(theta) * wiggle;
+            const y = this.size * Math.sin(theta) * wiggle;
             min_x = Math.min(x, min_x);
             max_x = Math.max(x, max_x);
             min_y = Math.min(y, min_y);
             max_y = Math.max(y, max_y);
-            let p: PointData = {x, y};
+            const p: PointData = {x, y};
             points.push(p);
         }
         // recalculate the actual radius based on the points plotted
-        this.radius = (max_x - min_x) /2;
+        this.size = (max_x - min_x) /2;
         this.outline = new Polygon(points);
         this.rendered.poly(points);
 
@@ -71,7 +69,7 @@ export class Rock {
         return lowest;    
     }
 
-    public getBottomOutline(): PointData[] {
+    public getImpactOutline(): PointData[] {
         // return the outline of thr bottom half of the rock, in absolute coords
         // also allowing for rotation
         let absolutePoints: PointData[] = [];
@@ -110,17 +108,13 @@ export class Rock {
     }
 
     public altitude(): number {
-        // returns the height of the lowest point of the rock from the bottom of the screen
-        // (more intuitive than pixel coords which increase as you go down the screen)
-        return this.maxAltitude - this.lowestPoint();
+        // returns the y-coord of the lowest point of the rock from the bottom of the screen
+        // (remember y-coords increase as you move down the screen)
+        return this.lowestPoint();
     }
 
     public collidesWithGround(ground: Landscape, debugHook: Debugger): PointData | null {
         // check if any of the points in the array are inside this rock
-        // let absolutePoints: PointData[] = [];
-        // for (let i=0; i<this.outline.points.length; i++) {
-        //     absolutePoints.push(this.outline.points[i])
-        // }
         const outline = this.absoluteOutline();
         for (let i=0; i<outline.points.length; i+=2) {
             const groundX = outline.points[i];

@@ -10,6 +10,7 @@ export class Debugger {
     private display: Graphics = new Graphics();
     private deferredPoints: {point: PointData; color: number}[] = [];
     private deferredLines: {p1: PointData; p2: PointData; color: number}[] = [];
+    private deferredPolys: {points: PointData[]; color: number}[] = [];
 
     constructor(displayLayer: Container, rockManager: RockManager) {
         this.rockManager = rockManager;
@@ -29,7 +30,7 @@ export class Debugger {
         // draw the absolute positions of each rock vertex on the impacting side
         for (let i=0; i<this.rockManager.debugGetRockCount(); i++) {
             const r = this.rockManager.debugGetRock(i)
-            const rockOutline = r.getBottomOutline();
+            const rockOutline = r.getImpactOutline();
             this.display.circle(r.position.x, r.position.y, 3).fill(DEBUG_COLOR);
             for (let j=0; j<rockOutline.length; j++) {
                 let pointX = rockOutline[j].x;
@@ -52,8 +53,15 @@ export class Debugger {
                 .fill(this.deferredPoints[i].color);
         }
 
+
+        // draw any polygons that have been added from other modules
+        for (let i=0; i<this.deferredPolys.length; i++) {
+            this.display.poly(this.deferredPolys[i].points)
+                .stroke({width: 2, color: this.deferredPolys[i].color});
+        }
+
         // draw any lines that have been added from other modules
-        // unlike points, the list is wiped once the lines have been drawn
+        // unlike points & polygons, the list is wiped once the lines have been drawn
         // so they must be requested again each frame
         for (let i=0; i<this.deferredLines.length; i++) {
             this.display.moveTo(this.deferredLines[i].p1.x, this.deferredLines[i].p1.y)
@@ -74,5 +82,13 @@ export class Debugger {
     drawLine(p1: PointData, p2: PointData, color: number) {
         // add a line to the list to be drawn on the next update
         this.deferredLines.push({p1: p1, p2: p2, color: color});
+    }
+
+    drawPoly(points: PointData[], color: number) {
+        // add a polygon to the list to be drawn on the next update
+        while (this.deferredPolys.length >= MAX_DEBUG_POINTS) {
+            this.deferredPolys.shift();
+        }
+        this.deferredPolys.push({points: points, color: color});
     }
 }
