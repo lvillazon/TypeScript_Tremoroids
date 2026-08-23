@@ -91,4 +91,8 @@ export class Debugger {
         }
         this.deferredPolys.push({points: points, color: color});
     }
+
+    public destroy() {
+        this.display.destroy();
+    }
 }

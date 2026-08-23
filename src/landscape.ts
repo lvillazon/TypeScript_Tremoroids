@@ -204,4 +204,8 @@ export class Landscape {
         this.outline.sort(
             function(p1: PointData, p2: PointData){return p1.x - p2.x});
     }
+
+    public destroy() {
+        this.surfaceLine.image.destroy();
+    }
 }

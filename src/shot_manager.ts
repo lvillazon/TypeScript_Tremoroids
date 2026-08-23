@@ -32,9 +32,16 @@ export class ShotManager {
     public despawnShot(shotNumber: number) {
         // remove graphical part from the scene
         this.displayLayer.removeChild(this.shots[shotNumber].rendered.image);
+        this.shots[shotNumber].rendered.image.destroy();
         // remove from the shots array by replacing it with a copy of the last rock
         // and then popping the last rock off - saves shuffling elements down
         this.shots[shotNumber] = this.shots[this.shots.length -1];
         this.shots.pop();
+    }
+
+    public destroy() {
+        for (let i=this.shots.length-1; i>=0; i--) {
+            this.despawnShot(i);
+        }
     }
 }

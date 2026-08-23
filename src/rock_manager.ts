@@ -40,7 +40,6 @@ export class RockManager {
             // collision check with the ground
             const collidePoint = r.collidesWithGround(this.ground, debugHook);
             if (collidePoint) {
-                console.log("colliding");
                 if (r.size > SHATTER_RADIUS) {
                     // big rocks break into smaller ones
                     //console.log("SMASH!");
@@ -97,8 +96,12 @@ export class RockManager {
     }
 
     public despawnRockByIndex(rockNumber: number) {
+        if (rockNumber >= this.rocks.length) return;  // ignore atempts to delete non-existent rocks
+
         // remove graphical part from the scene
         this.displayLayer.removeChild(this.rocks[rockNumber].rendered.image);
+        this.rocks[rockNumber].rendered.image.destroy();
+        
         // remove from the rocks array by replacing it with a copy of the last rock
         // and then popping the last rock off - saves shuffling elements down
         this.rocks[rockNumber] = this.rocks[this.rocks.length -1];
@@ -128,5 +131,11 @@ export class RockManager {
             i++;
         }
         return null;
+    }
+
+    public destroy() {
+        for (const rock of this.rocks) {
+            rock.rendered.image.destroy();
+        }
     }
 }

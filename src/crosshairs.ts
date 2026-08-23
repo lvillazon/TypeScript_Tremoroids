@@ -42,4 +42,8 @@ export class CrossHairs {
         }
     }
 
+    public destroy() {
+        this.rendered.image.destroy();
+    }
+
 }

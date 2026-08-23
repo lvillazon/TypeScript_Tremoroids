@@ -1,17 +1,21 @@
-import { Application, Container } from "pixi.js";
+import { Application, Container, Ticker } from "pixi.js";
 import { RockManager } from "./rock_manager";
 import { Landscape } from "./landscape";
 import { Tank } from "./tank";
 import { Debugger } from "./debug";
 import { CrossHairs } from "./crosshairs";
 import { ShotManager } from "./shot_manager";
-import { TextManager } from "./text_renderer";
+import { TextManager, Label } from "./text_renderer";
 
 const GROUND_LEVEL = 150;
 const MAX_ROCKS = 5;
 const MIN_ROCK_SIZE = 80;
 const MAX_ROCK_SIZE = 120;
+const STATIONARY_TIME = 5;  // how many seconds you are allowed to be stopped before failing the level
 
+// Game states
+const PLAYING = 0;
+const GAME_OVER = 1;
 
 export class Game {
     private app: Application;
@@ -30,16 +34,27 @@ export class Game {
     private debugLayer: Container;
     private paused = false;
     private keys: Set<string>;
-
-    public constructor(app: Application) {
+    private countdown: number;         // how long player has left to get moving again
+    private countdownLabel: Label | null;
+    private scoreLabel: Label;
+    private score: number;
+    private gameState: number;
+    private onRestart: () => void;
+    private tickerCallback: (ticker: Ticker) => void;
+    
+    public constructor(app: Application, onRestart: () => void) {
+        this.gameState = PLAYING;
         this.app = app;
+        this.onRestart = onRestart;
+        this.countdown = -1;
+        this.countdownLabel = null;
         
         this.landscapeLayer = new Container();
         this.landscape = new Landscape(
             this.landscapeLayer, 
             app.screen.height - GROUND_LEVEL, 
             app.screen.width,
-        );
+        );this.landscapeLayer
 
         this.rockLayer = new Container();
         this.rockManager = new RockManager(
@@ -61,6 +76,9 @@ export class Game {
 
         this.UILayer = new Container();
         this.textManager = new TextManager(this.UILayer);
+        this.textManager.addLabel("SC0RE", {x:10, y:10}, 40);  // label for the player score
+        this.scoreLabel = this.textManager.addLabel("00000", {x: 170, y: 10}, 40);
+        this.score = 0;
 
         this.debugLayer = new Container();
         this.debugInfo = new Debugger(this.debugLayer, this.rockManager);
@@ -73,8 +91,9 @@ export class Game {
         this.app.stage.addChild(this.UILayer);
         this.app.stage.addChild(this.debugLayer);
 
-
-        this.app.ticker.add((ticker) => this.update(ticker.deltaTime));
+        this.tickerCallback = (ticker: Ticker) => 
+            this.update(ticker.deltaTime, ticker.elapsedMS);
+        this.app.ticker.add(this.tickerCallback);
 
         // keyboard handler
         this.keys = new Set<string>();
@@ -85,7 +104,6 @@ export class Game {
             this.keys.delete(event.code);
         });
 
-
         // mouse handler
         this.app.stage.eventMode = "static";
         this.app.stage.hitArea = this.app.screen;
@@ -94,20 +112,26 @@ export class Game {
             this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
         });
         this.app.stage.on('pointerdown', () => {
-            this.shotManager.spawnShot(this.tank.getFiringSolution());
+            if (this.gameState == PLAYING) {
+                this.shotManager.spawnShot(this.tank.getFiringSolution());
+            }
         });
-
-        // test text system
-        this.textManager.addLabel("123", {x:100, y:100}, 30);
     }
 
-    private update(deltaTime: number) {
+    private update(deltaTime: number, elapsedMS: number) {
         if (this.paused) {
             return
         }
 
         if (this.keys.has("Space")) {
-            this.paused = !this.paused;
+            if (this.gameState == PLAYING) {
+                this.paused = !this.paused;
+            } else if (this.gameState == GAME_OVER) {
+                queueMicrotask(() => {  // make sure we don't try to restart in the middle of a Pixi update
+                    this.onRestart();
+                });
+                return;
+            }
         }
 
         this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
@@ -116,7 +140,45 @@ export class Game {
         
         let scroll = this.tank.update(this.crosshairs.position(), this.debugInfo);
         this.landscape.update(this.app.screen.width, scroll);
+
+        if (scroll === 0) {  // tank has stopped moving
+            if (this.countdown === -1) {
+                this.countdown = STATIONARY_TIME;
+                this.countdownLabel = this.textManager.addLabel(
+                    STATIONARY_TIME.toString(), 
+                    {x: this.app.screen.width/2, y: 100}, 
+                    50);
+            } else if (this.countdownLabel) {
+                this.countdown -= elapsedMS/1000;
+                if (this.countdown > 0) {
+                    // only update the countdown text if the number of seconds left is different
+                    // otherwise we are pointlessly throwing away and recreating a lot of VectorChar objects
+                    //if (Math.ceil(this.countdown).toString() != this.countdownLabel.text) {
+                        this.countdownLabel.setText(Math.ceil(this.countdown).toString());
+                    //}
+                    // text size uses the decimal part of the time, so at n.99 seconds, the text has size (99 * 200) + 10
+                    // and at n.01 seconds, the text has been shrunk to just 12
+                    const size = (this.countdown - Math.floor(this.countdown)) * 200 + 10;
+                    this.countdownLabel.resize(size);
+                } else {
+                    // time's up!
+                    this.countdownLabel.setText("GAME 0VER");
+                    this.countdownLabel.resize(100);
+                    this.countdownLabel.setPosition(this.app.screen.width/2 - this.countdownLabel.getWidth()/2, 100)
+                    this.gameState = GAME_OVER;
+                }
+            }
+        } else {
+            this.updateScore(0.1);
+        }
+        
         //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
+    }
+
+    private updateScore(points: number) {
+        // add/subtract points from player score
+        this.score += points;
+        this.scoreLabel.setText(Math.floor(this.score).toString().padStart(5, "0"));
     }
 
     private checkShotImpacts() {
@@ -139,11 +201,23 @@ export class Game {
                 } 
                 else
                 // bounds check with the screen
-                if (p.x > this.app.screen.width || p.x < 0 || p.y > this.app.screen.height || p.y < 0) {
+                if (p.x > this.app.screen.width || p.x < 0 || p.y > this.app.screen.height) {
                     this.shotManager.despawnShot(i);
                 }
             }
         }
+    }
+
+    public destroy() {
+        // free all memory before quitting
+        this.app.ticker.remove(this.tickerCallback);
+        this.rockManager.destroy();
+        this.landscape.destroy();
+        this.tank.destroy();
+        this.crosshairs.destroy();
+        this.shotManager.destroy();
+        this.textManager.destroy()
+        this.debugInfo.destroy();
     }
 
 }

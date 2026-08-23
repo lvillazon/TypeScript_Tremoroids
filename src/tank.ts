@@ -8,6 +8,7 @@ import type { Landscape } from "./landscape";
 const ANIMATION_FRAMES = 5;
 const SPEED = 1;
 const GRAVITY = 0.02;
+const MAX_SLOPE = -0.6;  // the steepest upward slope that the tank can negotiate
 
 function distanceBetween(point1: PointData, point2:PointData): number {
     return Math.sqrt(((point1.x - point2.x) **2) + ((point1.y - point2.y) **2));
@@ -252,7 +253,7 @@ export class Tank {
             const newTankSlope = slope(
                 absoluteBackWheel,
                 {x: absoluteFrontWheel.x, y: heightAtFrontWheel});
-            if (newTankSlope < -0.6) {
+            if (newTankSlope < MAX_SLOPE) {
                 this.velocity = {x:0, y:0};  // too steep to carry on
             } else {
                 this.tankContainer.rotation = Math.atan(newTankSlope);
@@ -289,6 +290,14 @@ export class Tank {
         //debugHook.drawPoint(absoluteBackWheel, 0xFF0000);
         
         return this.velocity.x;  // used to tell the landscape how much to scroll
+    }
+
+    public destroy() {
+        for (const texture of this.frames) {
+            texture.destroy()
+        }
+        this.sprite.destroy();
+        this.barrel.image.destroy();
     }
 
 }
