@@ -141,7 +141,7 @@ export class Landscape {
         const number_of_points = Math.max(craterRadius /10, 5);  // need at least 5 points
         let wiggle = 0.1;
         for (let i=0; i<number_of_points; i++) {
-            let theta = Math.PI * i / (number_of_points-1);
+            let theta = Math.PI * i / (number_of_points);
             wiggle = Math.random() * ROUGHNESS
             const x = impactPoint.x + craterRadius * Math.cos(theta) + wiggle;
             const y = impactPoint.y + craterDepth * Math.sin(theta) + wiggle;

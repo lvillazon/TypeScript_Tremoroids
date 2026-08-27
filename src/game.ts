@@ -1,4 +1,4 @@
-import { Application, Container, Ticker } from "pixi.js";
+import { Application, Container, FederatedPointerEvent, Ticker, type PointData } from "pixi.js";
 import { RockManager } from "./rock_manager";
 import { Landscape } from "./landscape";
 import { Tank } from "./tank";
@@ -41,6 +41,16 @@ export class Game {
     private gameState: number;
     private onRestart: () => void;
     private tickerCallback: (ticker: Ticker) => void;
+    private pointerMoveCallback = (event: FederatedPointerEvent) => {
+        const mouse = event.global;
+        this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
+    };
+    private pointerDownCallback = () => {
+        if (this.gameState == PLAYING) {
+            this.shotManager.spawnShot(this.tank.getFiringSolution());
+        }
+    };
+
     
     public constructor(app: Application, onRestart: () => void) {
         this.gameState = PLAYING;
@@ -107,15 +117,8 @@ export class Game {
         // mouse handler
         this.app.stage.eventMode = "static";
         this.app.stage.hitArea = this.app.screen;
-        this.app.stage.on('pointermove', (event) => {
-            const mouse = event.global;
-            this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
-        });
-        this.app.stage.on('pointerdown', () => {
-            if (this.gameState == PLAYING) {
-                this.shotManager.spawnShot(this.tank.getFiringSolution());
-            }
-        });
+        this.app.stage.on("pointermove", this.pointerMoveCallback);
+        this.app.stage.on("pointerdown", this.pointerDownCallback);
     }
 
     private update(deltaTime: number, elapsedMS: number) {
@@ -132,12 +135,16 @@ export class Game {
                 });
                 return;
             }
+        } else if (this.keys.has("KeyX")) {
+            this.explodeTank();
         }
 
         this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
         this.shotManager.update(deltaTime, this.debugInfo);
+        this.checkRockImpacts()
         this.checkShotImpacts();
         
+        // move tank across landscape and adjust barrel elevation
         let scroll = this.tank.update(this.crosshairs.position(), this.debugInfo);
         this.landscape.update(this.app.screen.width, scroll);
 
@@ -162,13 +169,10 @@ export class Game {
                     this.countdownLabel.resize(size);
                 } else {
                     // time's up!
-                    this.countdownLabel.setText("GAME 0VER");
-                    this.countdownLabel.resize(100);
-                    this.countdownLabel.setPosition(this.app.screen.width/2 - this.countdownLabel.getWidth()/2, 100)
-                    this.gameState = GAME_OVER;
+                    this.gameOver();
                 }
             }
-        } else {
+        } else if (!this.tank.isDead()) {
             this.updateScore(0.1);
         }
         
@@ -195,6 +199,7 @@ export class Game {
                 // collision check with rocks
                 const rock = this.rockManager.findCollision(p);
                 if (rock) {
+                    this.updateScore(rock.size);  // more points for bigger rocks!
                     this.shotManager.despawnShot(i);
                     this.rockManager.splitRock(rock);
                     this.rockManager.despawnRock(rock);
@@ -208,9 +213,70 @@ export class Game {
         }
     }
 
+    private checkRockImpacts() {
+        for (let i=this.rockManager.getRockCount()-1; i>=0; i--) {  // backwards to avoid skipping on despawn
+            const rock = this.rockManager.getRock(i);
+
+            // collision check with the tank
+            if (!this.tank.isDead() && rock.collidesWithBoundingBox(this.tank.hitBox(), this.debugInfo)) {
+                if (rock.willShatter()) {
+                    // rocks big enough to break into smaller ones will destroy the tank
+                    this.rockManager.splitRock(rock);
+                    this.rockManager.despawnRockByIndex(i);
+                    this.explodeTank();
+                    this.gameOver();
+                } else {
+                    // smaller ones bounce off harmlessly
+                    this.rockManager.bounceRock(rock);
+                }
+
+            } else {
+                // collision check with the ground
+                const collidePoint = rock.collidesWithGround(this.landscape, this.debugInfo);
+                
+                if (collidePoint) {
+                    if (rock.willShatter()) {
+                        // big rocks break into smaller ones
+                        this.rockManager.splitRock(rock);
+                        this.landscape.impact(rock, collidePoint, this.debugInfo);
+                    } else {
+                        // smaller rocks become part of the landscape
+                        // TODO
+                        //console.log("too small for crater");
+                    }
+                    this.rockManager.despawnRockByIndex(i);
+                }
+            }
+        }
+    }
+
+    private explodeTank() {
+        this.tank.explode();
+        const p = this.tank.getPosition();
+        this.rockManager.spawnDebris(
+            {x: p.x, y: p.y - this.tank.getSize()},
+            3,
+            this.tank.getSize()
+        );
+    }
+
+    private gameOver() {
+        const gameOverMessage = this.textManager.addLabel(
+            "GAME 0VER",
+            {x:0, y:0},
+            100
+        );
+        gameOverMessage.setPosition(
+            this.app.screen.width/2 - gameOverMessage.getWidth()/2, 
+            this.app.screen.height/2 - gameOverMessage.height/2);
+        this.gameState = GAME_OVER;
+    }
+
     public destroy() {
         // free all memory before quitting
         this.app.ticker.remove(this.tickerCallback);
+        this.app.stage.removeEventListener("pointermove", this.pointerMoveCallback);
+        this.app.stage.removeEventListener("pointerdown", this.pointerDownCallback);
         this.rockManager.destroy();
         this.landscape.destroy();
         this.tank.destroy();

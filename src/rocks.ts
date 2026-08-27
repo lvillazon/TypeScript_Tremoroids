@@ -1,11 +1,12 @@
 // Falling rocks
-import { Polygon, type PointData } from "pixi.js";
+import { Polygon, Bounds, type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
 import type { Landscape } from "./landscape";
 
 const GRAVITY = 0.02;
 const ROUGHNESS = 0.1;
+const SHATTER_RADIUS = 30;
 
 export class Rock {
     public rendered: Renderer;
@@ -44,6 +45,11 @@ export class Rock {
         this.rendered.image.position.set(position.x, position.y);
         this.position = position;
         this.velocity = velocity;
+    }
+
+    public willShatter(): boolean {
+        // any rocks over a certain size shatter when they are shot or hit the ground
+        return (this.size > SHATTER_RADIUS);
     }
 
     public update(interval: number) {
@@ -125,6 +131,18 @@ export class Rock {
             }
         }
         return null;
+    }
+
+    public collidesWithBoundingBox(hitBox: Bounds, debugHook: Debugger): boolean {
+        // check if any of the points in the array are inside the hitbox
+        const outline = this.absoluteOutline();
+        for (let i=0; i<outline.points.length; i+=2) {
+            if (hitBox.containsPoint(outline.points[i], outline.points[i+1])) {
+                debugHook.drawPoint({x: outline.points[i], y: outline.points[i+1]}, 0xFFFF00);
+                return true;
+            }
+        }
+        return false;
     }
 
     public collidesWithPoint(point: PointData): boolean {

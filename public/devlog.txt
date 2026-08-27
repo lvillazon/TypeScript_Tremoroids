@@ -8,6 +8,16 @@ shooting the rocks and the ground to clear a path.
 Some rocks release cannon upgrades for more interesting shot types.
 When the player gets stuck or squashed by a rock, the game is over.
 
+TODO
+----
+X Fix restart bug caused by unreleased mouse handler
+X Tank explodes when hit by rocks (or its own shells?)
+  Boulders too small to shatter pile up on the landscape
+  Camera shake when rocks hit/shells explode/cannon fires
+  sound effects - tank engine, rock impacts, cannon firing, shot impacts, tank explosion
+  check deployment options
+  different weapons - rapid fire machine gun, slow cannon, flak cannon, TOW/homing missile
+
 
 Collision physics
 Rocks are irregular polygons and may be rotating as they fall.

@@ -4,7 +4,6 @@ import { Container, type PointData } from "pixi.js";
 import { Debugger } from "./debug";
 
 const SPAWN_CHANCE = 0.01
-const SHATTER_RADIUS = 30;
 const HORIZONTAL_VARIABILITY = 2; // how much horizontal velocity is added to shattered rocks
 const VERTICAL_DECAY = 3; // how much vertical velocity drops for shattered rocks
 
@@ -24,11 +23,11 @@ export class RockManager {
         this.ground = ground;
     }
 
-    public debugGetRock(index: number): Rock {
+    public getRock(index: number): Rock {
         return this.rocks[index];
     }
 
-    public debugGetRockCount(): number {
+    public getRockCount(): number {
         return this.rocks.length;
     }
 
@@ -37,28 +36,11 @@ export class RockManager {
             let r = this.rocks[i];
             r.update(interval);
 
-            // collision check with the ground
-            const collidePoint = r.collidesWithGround(this.ground, debugHook);
-            if (collidePoint) {
-                if (r.size > SHATTER_RADIUS) {
-                    // big rocks break into smaller ones
-                    //console.log("SMASH!");
-                    this.splitRock(r);
-                    this.ground.impact(r, collidePoint, debugHook);
-                } else {
-                    // smaller rocks become part of the landscape
-                    // TODO
-                    //console.log("too small for crater");
-                }
-                this.despawnRockByIndex(i);
-            }
-
             // remove any rocks that escaped hitting the ground and fell through the screen
             if (r.altitude() > height) {
                 this.despawnRockByIndex(i);
             }
         }
-
 
         // add new rocks at random until we hit population cap
         if ((this.rocks.length < this.maxRocks) && this.rockSpawnChance()) {
@@ -76,23 +58,43 @@ export class RockManager {
         // shatter this rock into smaller fragments that bounce away
         const numberofFragments = Math.ceil(Math.random() * MAX_FRAGMENTS);
         for (let i=0; i<numberofFragments; i++) {
-            const v = r.velocity.x 
-                + (Math.random() * 2 * HORIZONTAL_VARIABILITY) - HORIZONTAL_VARIABILITY;
             this.spawnRock(
                 r.position, 
-                {x: v, y: -r.velocity.y / VERTICAL_DECAY}, 
+                this.getBounceVelocity(r.velocity), 
                 // fragments can't be bigger than the original
                 Math.min(r.size, r.size * 2 / numberofFragments));
         }
     }
 
-    spawnRock(position: PointData, velocity: PointData, radius: number) {
+    private getBounceVelocity(velocity: PointData): PointData {
+        return {
+            x: velocity.x 
+                + (Math.random() * 2 * HORIZONTAL_VARIABILITY) - HORIZONTAL_VARIABILITY,
+            y: -velocity.y / VERTICAL_DECAY
+        }
+    }
+
+    public bounceRock(r: Rock) {
+        r.velocity = this.getBounceVelocity(r.velocity);
+    }
+
+    public spawnRock(position: PointData, velocity: PointData, radius: number) {
         const r = new Rock(
             {x: position.x, y: position.y}, 
             {x: velocity.x, y: velocity.y}, 
             radius);
         this.rocks.push(r);
         this.displayLayer.addChild(r.rendered.image);
+    }
+
+    public spawnDebris(position: PointData, fragments: number, maxSize: number) {
+        for (let i=0; i<fragments; i++) {
+            this.spawnRock(
+                position,
+                this.getBounceVelocity({x: 0, y: 5 }),
+                Math.random() * maxSize
+            );
+        }
     }
 
     public despawnRockByIndex(rockNumber: number) {

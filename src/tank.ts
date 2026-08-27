@@ -1,5 +1,5 @@
 // The player tank
-import { type Renderer as PixiRenderer} from "pixi.js";
+import { Bounds, type Renderer as PixiRenderer} from "pixi.js";
 import { Container, Graphics, Sprite, Texture, type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
@@ -8,15 +8,15 @@ import type { Landscape } from "./landscape";
 const ANIMATION_FRAMES = 5;
 const SPEED = 1;
 const GRAVITY = 0.02;
-const MAX_SLOPE = -0.6;  // the steepest upward slope that the tank can negotiate
+const MAX_SLOPE = -0.7;  // the steepest upward slope that the tank can negotiate
 
 function distanceBetween(point1: PointData, point2:PointData): number {
     return Math.sqrt(((point1.x - point2.x) **2) + ((point1.y - point2.y) **2));
 }
     
-function toRadians(angle: number): number {
-    return angle * Math.PI / 180;
-}
+// function toRadians(angle: number): number {
+//     return angle * Math.PI / 180;
+// }
 
 function slope(point1: PointData, point2: PointData): number {
     // gradient of the line connecting these points   
@@ -42,6 +42,7 @@ export class Tank {
     private displayLayer: Container;
     private tankContainer: Container;
     private ground: Landscape;
+    private speed: number;
     public velocity: PointData;
     public landscapeX: number;  // how far the tank has travelled across the landscape
     private oldPosition: PointData;
@@ -64,6 +65,7 @@ export class Tank {
     private barrel: Renderer;
     private minElevation: number;
     private maxElevation: number;
+    private dead: boolean;
 
     public constructor(
         textureRenderer: PixiRenderer, 
@@ -80,11 +82,19 @@ export class Tank {
 
         for (let f=0; f<ANIMATION_FRAMES; f++) {
             const image = this.drawTankFrame(f);
+            //const image = this.drawTankFrame(f);
             this.frames.push(
                 textureRenderer.generateTexture(image)
             );
             image.destroy();  // explicitly release GPU resources used by Pixi
         }
+        // add one more frame for the destroyed tank
+        const image = this.drawBustedTank();
+        this.frames.push(
+            textureRenderer.generateTexture(image)
+        );
+        image.destroy();
+
         this.sprite = new Sprite(this.frames[0]);
         this.sprite.anchor.set(0.5, 1);  // explicitly set the translation/drawing achor to the bottom? left corner
         this.tankContainer = new Container();
@@ -103,10 +113,28 @@ export class Tank {
         this.backWheel = {x: size * -2.0, y: size * -0.1};
         this.tankContainer.origin.set(this.centerOfGravity.x, this.centerOfGravity.y);
         this.landscapeX = 0;
-        this.velocity = {x: 0, y: 0};
+        this.speed = SPEED;
+        this.velocity = {x: this.speed, y: 0};
         this.frameNumber = 0;
         this.maxElevation = 0.1;
         this.minElevation = -1.5;
+        this.dead = false;
+    }
+
+    public hitBox(): Bounds {
+        return this.sprite.getBounds();
+    }
+
+    public getPosition(): PointData {
+        return this.tankContainer.position;
+    }
+
+    public getSize(): number {
+        return this.size * 2;
+    }
+
+    public isDead(): boolean {
+        return this.dead;
     }
 
     private drawTankFrame(frameNumber: number): Graphics {
@@ -195,6 +223,89 @@ export class Tank {
         return rendered.image;
     }
 
+    private drawBustedTank(): Graphics {
+        // procedurally draw a tank crushed by a large rock
+        const tank_image_detail = 5;  // higher numbers mean more points in the tank graphic
+        const rendered: Renderer = new Renderer();
+
+        // the tank image comprises:
+        // a semicircle turret in the middle, with a line for the barrel
+        let points: PointData[] = [];
+        // for (let i=0; i<tank_image_detail+1; i++) {
+        //     let theta = -Math.PI + Math.PI * i / tank_image_detail;
+        //     let x = this.size * Math.cos(theta);
+        //     let y = this.size * Math.sin(theta);
+        //     let p: PointData = {x, y};
+        //     points.push(p);
+        // }
+        // rendered.poly(points);  // turret
+
+        // 3 lines to define the top hull
+        rendered.moveTo(-this.size*2.5, this.size*0.5);
+        rendered.lineTo(-this.size*2, 0);
+        rendered.lineTo(0, 0);
+        rendered.lineTo(this.size*2.5, this.size*0.5);
+
+        // an oval for the tank track outline
+        points = [];
+        for (let i=0; i<tank_image_detail+1; i++) {
+            let theta = Math.PI/2 + Math.PI * i / tank_image_detail;
+            let x = -this.size * 1.6 + this.size * 0.5 * Math.cos(theta);
+            let y = this.size * 0.7 + this.size * 0.5 * Math.sin(theta);
+            points.push({x: x, y: y});
+        }
+        for (let i=0; i<tank_image_detail+1; i++) {
+            let theta = -Math.PI/2 + Math.PI * i+1 / tank_image_detail;
+            let x = this.size * 1.6 + this.size * 0.5 * Math.cos(theta);
+            let y = this.size * 0.7 + this.size * 0.5 * Math.sin(theta);
+            points.push({x: x, y: y});
+        }
+        rendered.polyLine(points);  // turrent
+
+        // 4 circles within the outline to represent the wheels
+        const wheelPositions = [-1.6, 0.55, 1.6];
+        for (let i=0; i<wheelPositions.length; i++) {
+            rendered.circle(
+                -this.size * wheelPositions[i],
+                this.size * 0.7,
+                this.size/ 6
+            );
+        }
+
+        // short lines to represent the tread on the tracks
+        // left and right curved sections first
+        let centre1 = {x: -this.size * 1.6, y: this.size * 0.7};
+        let centre2 = {x: this.size * 1.6, y: this.size * 0.7};
+        let wheelRadius = this.size * 0.5;
+        let trackLength = this.size * 0.1;
+        let trackAngleOffset = Math.PI * 0.9;
+        for (let i=0; i<tank_image_detail; i++) {
+            let frontTheta = Math.PI/2 + Math.PI * i / tank_image_detail;
+            let backTheta = frontTheta - trackAngleOffset;
+            let x1 = centre1.x + wheelRadius * Math.cos(frontTheta);
+            let y1 = centre1.y + wheelRadius * Math.sin(frontTheta);
+            let x2 = centre1.x + (wheelRadius + trackLength) * Math.cos(frontTheta);
+            let y2 = centre1.y + (wheelRadius + trackLength) * Math.sin(frontTheta);
+            let x3 = centre2.x + wheelRadius * Math.cos(backTheta);
+            let y3 = centre2.y + wheelRadius * Math.sin(backTheta);
+            let x4 = centre2.x + (wheelRadius + trackLength) * Math.cos(backTheta);
+            let y4 = centre2.y + (wheelRadius + trackLength) * Math.sin(frontTheta-trackAngleOffset);
+            rendered.moveTo(x1, y1);
+            rendered.lineTo(x2, y2);
+            rendered.moveTo(x3, y3);
+            rendered.lineTo(x4, y4);
+        }
+        // now the two straight sections
+        for (let x=centre1.x; x<centre2.x; x+=this.trackSpacing) {
+            rendered.moveTo(x, centre1.y + wheelRadius);
+            rendered.lineTo(x, centre1.y + wheelRadius + trackLength);
+            rendered.moveTo(x, centre1.y - wheelRadius - Math.random()*3);
+            rendered.lineTo(x, centre1.y - wheelRadius - trackLength * Math.random());
+        }
+
+        return rendered.image;
+    }
+
     public getFiringSolution(): FiringSolution {
         return new FiringSolution(
             this.muzzlePosition,
@@ -237,7 +348,9 @@ export class Tank {
     }
 
     public update(aimPoint: PointData, debugHook: Debugger) {
-        this.drawBarrel(aimPoint, debugHook);  // update barrel to point at crosshairs
+        if (!this.isDead()) {
+            this.drawBarrel(aimPoint, debugHook);  // update barrel to point at crosshairs
+        }
 
         // calculate rotation to keep the tank on the terrain
         // convert the key reference points on the tank from local to screen coords
@@ -257,8 +370,8 @@ export class Tank {
                 this.velocity = {x:0, y:0};  // too steep to carry on
             } else {
                 this.tankContainer.rotation = Math.atan(newTankSlope);
-                this.velocity.x = SPEED * Math.cos(this.tankContainer.rotation);
-                this.velocity.y = SPEED * Math.sin(this.tankContainer.rotation);
+                this.velocity.x = this.speed * Math.cos(this.tankContainer.rotation);
+                this.velocity.y = this.speed * Math.sin(this.tankContainer.rotation);
             }
 
         } 
@@ -269,20 +382,28 @@ export class Tank {
             } 
         }
 
+        // exploded tanks roll gently to a halt
+        if (this.isDead()) {
+            this.speed *= 0.95;
+        }
+
         // update position on the scrolling landscape
         this.landscapeX += this.velocity.x;
         this.tankContainer.position.y += this.velocity.y;
-        // update the tank animation if we have travelled far enough
-        let distanceTravelled = distanceBetween(
-            {x: this.landscapeX, y: this.tankContainer.position.y}, 
-            this.oldPosition
-        );
-        if (distanceTravelled >= 1) {
-            this.oldPosition = {x: this.tankContainer.position.x, y: this.tankContainer.position.y};
-            this.frameNumber = (this.frameNumber + 1) % ANIMATION_FRAMES;
-            this.sprite.texture = this.frames[this.frameNumber];
+        if (!this.isDead()) {
+            // update the tank animation if we have travelled far enough
+            let distanceTravelled = distanceBetween(
+                {x: this.landscapeX, y: this.tankContainer.position.y}, 
+                this.oldPosition
+            );
+            if (distanceTravelled >= 1) {
+                this.oldPosition = {x: this.tankContainer.position.x, y: this.tankContainer.position.y};
+                this.frameNumber = (this.frameNumber + 1) % ANIMATION_FRAMES;
+                this.sprite.texture = this.frames[this.frameNumber];
+            }
+        } else {
+            this.sprite.texture = this.frames[ANIMATION_FRAMES];
         }
-
         //debugHook.drawLine(absoluteBackWheel, absoluteFrontWheel, 0x00FF00);        
         //debugHook.drawPoint(this.screenPosition, 0xFFFFFF);
         //debugHook.drawPoint(absoluteFrontWheel, 0x00FF00);
@@ -292,7 +413,16 @@ export class Tank {
         return this.velocity.x;  // used to tell the landscape how much to scroll
     }
 
+    public explode() {
+        // exploding is when the tank is killed in-game
+        this.dead = true;
+        this.barrel.clear();
+    }
+
     public destroy() {
+        // destroying is for removing the tank object when the game ends, to free resources
+        // this is completely different from exploding it, which is just when the player
+        // gets blown up, in-game
         for (const texture of this.frames) {
             texture.destroy()
         }
