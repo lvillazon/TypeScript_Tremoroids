@@ -16,6 +16,7 @@ const STATIONARY_TIME = 5;  // how many seconds you are allowed to be stopped be
 // Game states
 const PLAYING = 0;
 const GAME_OVER = 1;
+const JUST_LOST = 2;
 
 export class Game {
     private app: Application;
@@ -28,6 +29,7 @@ export class Game {
     private shootingLayer: Container;
     private crosshairs: CrossHairs;
     private shotManager: ShotManager;
+    private worldLayer: Container;
     private UILayer: Container;
     private textManager: TextManager
     private debugInfo: Debugger;
@@ -39,6 +41,8 @@ export class Game {
     private scoreLabel: Label;
     private score: number;
     private gameState: number;
+    private cameraShake: number;
+    private firing: boolean;
     private onRestart: () => void;
     private tickerCallback: (ticker: Ticker) => void;
     private pointerMoveCallback = (event: FederatedPointerEvent) => {
@@ -47,7 +51,12 @@ export class Game {
     };
     private pointerDownCallback = () => {
         if (this.gameState == PLAYING) {
-            this.shotManager.spawnShot(this.tank.getFiringSolution());
+            this.firing = true;
+        }
+    };
+    private pointerUpCallback = () => {
+        if (this.gameState == PLAYING) {
+            this.firing = false;
         }
     };
 
@@ -58,6 +67,8 @@ export class Game {
         this.onRestart = onRestart;
         this.countdown = -1;
         this.countdownLabel = null;
+        this.cameraShake = 0;
+        this.firing = false;
         
         this.landscapeLayer = new Container();
         this.landscape = new Landscape(
@@ -94,13 +105,15 @@ export class Game {
         this.debugInfo = new Debugger(this.debugLayer, this.rockManager);
 
         // add all the layers in the right order, from background to foreground
-        this.app.stage.addChild(this.landscapeLayer);
+        this.worldLayer = new Container();
+        this.worldLayer.addChild(this.landscapeLayer);
+        this.worldLayer.addChild(this.shootingLayer);
+        this.worldLayer.addChild(this.playerLayer);
+        this.worldLayer.addChild(this.debugLayer);
+        this.app.stage.addChild(this.worldLayer);
         this.app.stage.addChild(this.rockLayer);
-        this.app.stage.addChild(this.shootingLayer);
-        this.app.stage.addChild(this.playerLayer);
         this.app.stage.addChild(this.UILayer);
-        this.app.stage.addChild(this.debugLayer);
-
+        
         this.tickerCallback = (ticker: Ticker) => 
             this.update(ticker.deltaTime, ticker.elapsedMS);
         this.app.ticker.add(this.tickerCallback);
@@ -119,9 +132,18 @@ export class Game {
         this.app.stage.hitArea = this.app.screen;
         this.app.stage.on("pointermove", this.pointerMoveCallback);
         this.app.stage.on("pointerdown", this.pointerDownCallback);
+        this.app.stage.on("pointerup", this.pointerUpCallback);
+        this.app.stage.on("pointerupoutside", this.pointerUpCallback);
     }
 
     private update(deltaTime: number, elapsedMS: number) {
+        if (this.cameraShake > 0) {
+            const shakeX = Math.random() * this.cameraShake * 2 - this.cameraShake;
+            const shakeY = Math.random() * this.cameraShake * 2 - this.cameraShake;
+            this.worldLayer.position.set(shakeX, shakeY);
+            this.cameraShake *= 0.95;
+        }
+        
         if (this.paused) {
             return
         }
@@ -129,14 +151,19 @@ export class Game {
         if (this.keys.has("Space")) {
             if (this.gameState == PLAYING) {
                 this.paused = !this.paused;
-            } else if (this.gameState == GAME_OVER) {
+            } else if (this.gameState == JUST_LOST) {
                 queueMicrotask(() => {  // make sure we don't try to restart in the middle of a Pixi update
                     this.onRestart();
                 });
+                this.gameState = GAME_OVER;
                 return;
             }
         } else if (this.keys.has("KeyX")) {
             this.explodeTank();
+        }
+
+        if (this.firing) {
+            this.shotManager.spawnShot(this.tank.getFiringSolution());
         }
 
         this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
@@ -148,7 +175,7 @@ export class Game {
         let scroll = this.tank.update(this.crosshairs.position(), this.debugInfo);
         this.landscape.update(this.app.screen.width, scroll);
 
-        if (scroll === 0) {  // tank has stopped moving
+        if (scroll < 0.01) {  // tank has stopped moving
             if (this.countdown === -1) {
                 this.countdown = STATIONARY_TIME;
                 this.countdownLabel = this.textManager.addLabel(
@@ -172,8 +199,10 @@ export class Game {
                     this.gameOver();
                 }
             }
-        } else if (!this.tank.isDead()) {
+        } else if (this.gameState == PLAYING) {
             this.updateScore(0.1);
+            this.countdown = -1;
+            if (this.countdownLabel) this.countdownLabel.destroy();
         }
         
         //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
@@ -193,6 +222,7 @@ export class Game {
             // collision check with the ground
             const groundImpact = this.landscape.collidesWithPoint(p);
             if (groundImpact) {
+                this.cameraShake = 1;
                 this.landscape.impact(shot, p, this.debugInfo);
                 this.shotManager.despawnShot(i);
             } else {
@@ -218,13 +248,16 @@ export class Game {
             const rock = this.rockManager.getRock(i);
 
             // collision check with the tank
-            if (!this.tank.isDead() && rock.collidesWithBoundingBox(this.tank.hitBox(), this.debugInfo)) {
+            if (rock.collidesWithBoundingBox(this.tank.hitBox(), this.debugInfo)) {
                 if (rock.willShatter()) {
                     // rocks big enough to break into smaller ones will destroy the tank
                     this.rockManager.splitRock(rock);
                     this.rockManager.despawnRockByIndex(i);
-                    this.explodeTank();
-                    this.gameOver();
+                    if (!this.tank.isDead())  {  // only blow up tank if not already dead!
+                        this.cameraShake = 10;
+                        this.explodeTank();
+                        this.gameOver();
+                    }
                 } else {
                     // smaller ones bounce off harmlessly
                     this.rockManager.bounceRock(rock);
@@ -235,6 +268,7 @@ export class Game {
                 const collidePoint = rock.collidesWithGround(this.landscape, this.debugInfo);
                 
                 if (collidePoint) {
+                    this.cameraShake = (rock.size ** 2) / 200;
                     if (rock.willShatter()) {
                         // big rocks break into smaller ones
                         this.rockManager.splitRock(rock);
@@ -266,10 +300,11 @@ export class Game {
             {x:0, y:0},
             100
         );
+        if(this.countdownLabel) this.countdownLabel.destroy();
         gameOverMessage.setPosition(
             this.app.screen.width/2 - gameOverMessage.getWidth()/2, 
             this.app.screen.height/2 - gameOverMessage.height/2);
-        this.gameState = GAME_OVER;
+        this.gameState = JUST_LOST;
     }
 
     public destroy() {
@@ -277,6 +312,8 @@ export class Game {
         this.app.ticker.remove(this.tickerCallback);
         this.app.stage.removeEventListener("pointermove", this.pointerMoveCallback);
         this.app.stage.removeEventListener("pointerdown", this.pointerDownCallback);
+        this.app.stage.removeEventListener("pointerup", this.pointerUpCallback);
+        this.app.stage.removeEventListener("pointerupoutside", this.pointerUpCallback);
         this.rockManager.destroy();
         this.landscape.destroy();
         this.tank.destroy();

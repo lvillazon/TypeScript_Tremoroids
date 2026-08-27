@@ -19,10 +19,9 @@ export class ShotManager {
     }
 
     spawnShot(firingSolution: FiringSolution) {
-        const size = 10;
         const s = new Shot(
             firingSolution.startPoint,
-            size, 
+            firingSolution.size, 
             firingSolution.speed, 
             firingSolution.elevation)
         this.shots.push(s);

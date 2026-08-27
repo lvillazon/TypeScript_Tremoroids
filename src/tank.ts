@@ -30,11 +30,13 @@ export class FiringSolution {
     public startPoint: PointData;
     public elevation: number;
     public speed: number;
+    public size: number;
 
-    constructor(start: PointData, elevation: number, speed: number) {
+    constructor(start: PointData, elevation: number, speed: number, size: number) {
         this.startPoint = {x: start.x, y: start.y};
         this.elevation = elevation;
         this.speed = speed;
+        this.size = size;
     }
 }
 
@@ -310,8 +312,13 @@ export class Tank {
         return new FiringSolution(
             this.muzzlePosition,
             this.gunElevation,
-            this.gunPower
+            this.getGunPower(),
+            1
         );
+    }
+
+    public getGunPower(): number{
+        return 7;
     }
 
     private drawBarrel(aimPoint: PointData, debugHook: Debugger) {
