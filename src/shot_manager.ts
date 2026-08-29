@@ -18,14 +18,18 @@ export class ShotManager {
         }
     }
 
-    spawnShot(firingSolution: FiringSolution) {
-        const s = new Shot(
-            firingSolution.startPoint,
-            firingSolution.size, 
-            firingSolution.speed, 
-            firingSolution.elevation)
-        this.shots.push(s);
-        this.displayLayer.addChild(s.rendered.image);
+    spawnShot(firingSolution: FiringSolution | null) {
+        if (firingSolution) {
+            const s = new Shot(
+                firingSolution.startPoint,
+                firingSolution.size, 
+                firingSolution.speed, 
+                firingSolution.elevation)
+            this.shots.push(s);
+            this.displayLayer.addChild(s.rendered.image);
+            return true;
+        }
+        return false;  // no shot fired;
     }
 
     public despawnShot(shotNumber: number) {

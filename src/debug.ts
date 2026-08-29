@@ -28,8 +28,8 @@ export class Debugger {
         });
 
         // draw the absolute positions of each rock vertex on the impacting side
-        for (let i=0; i<this.rockManager.debugGetRockCount(); i++) {
-            const r = this.rockManager.debugGetRock(i)
+        for (let i=0; i<this.rockManager.getRockCount(); i++) {
+            const r = this.rockManager.getRock(i)
             const rockOutline = r.getImpactOutline();
             this.display.circle(r.position.x, r.position.y, 3).fill(DEBUG_COLOR);
             for (let j=0; j<rockOutline.length; j++) {

@@ -53,7 +53,6 @@ export class Tank {
     private gunLength: number;
     private muzzlePosition: PointData;
     private gunElevation: number;
-    private gunPower: number;
     private size: number;
     private trackSpacing: number;
     private centerContactPoint: PointData;
@@ -68,6 +67,9 @@ export class Tank {
     private minElevation: number;
     private maxElevation: number;
     private dead: boolean;
+    private shotCooldown: number;
+    private lastShotTime: number;
+    public ammoType: number;
 
     public constructor(
         textureRenderer: PixiRenderer, 
@@ -80,11 +82,10 @@ export class Tank {
         this.gunLength = this.size * 2.5;  // barrel length
         this.muzzlePosition = {x: 0, y: 0};
         this.gunElevation = 0;
-        this.gunPower = 7;
 
+        const seed = Math.random() * 1000;
         for (let f=0; f<ANIMATION_FRAMES; f++) {
-            const image = this.drawTankFrame(f);
-            //const image = this.drawTankFrame(f);
+            const image = this.drawTankFrame(f, seed);
             this.frames.push(
                 textureRenderer.generateTexture(image)
             );
@@ -101,7 +102,7 @@ export class Tank {
         this.sprite.anchor.set(0.5, 1);  // explicitly set the translation/drawing achor to the bottom? left corner
         this.tankContainer = new Container();
         this.tankContainer.addChild(this.sprite);
-        this.barrel = new Renderer();  // the barrel is a separate image overlaid, to allow aiming
+        this.barrel = new Renderer(seed);  // the barrel is a separate image overlaid, to allow aiming
         this.tankContainer.addChild(this.barrel.image);
         this.displayLayer.addChild(this.tankContainer);
 
@@ -121,6 +122,9 @@ export class Tank {
         this.maxElevation = 0.1;
         this.minElevation = -1.5;
         this.dead = false;
+        this.shotCooldown = 1000;
+        this.lastShotTime = Date.now();
+        this.ammoType = 1;
     }
 
     public hitBox(): Bounds {
@@ -139,10 +143,10 @@ export class Tank {
         return this.dead;
     }
 
-    private drawTankFrame(frameNumber: number): Graphics {
+    private drawTankFrame(frameNumber: number, seed?: number): Graphics {
         // procedurally draw the tank frames so we can create sprite textures
         const tank_image_detail = 5;  // higher numbers mean more points in the tank graphic
-        const rendered: Renderer = new Renderer();
+        const rendered: Renderer = new Renderer(seed);
 
         // the tank image comprises:
         // a semicircle turret in the middle, with a line for the barrel
@@ -308,12 +312,30 @@ export class Tank {
         return rendered.image;
     }
 
-    public getFiringSolution(): FiringSolution {
+    public getFiringSolution(): FiringSolution | null {
+        if (Date.now() < this.lastShotTime + this.shotCooldown) {
+            return null;  // gun is still on cooldown
+        }
+        this.lastShotTime = Date.now();  // reset the cooldown
+        let power: number = 0;
+        let calibre: number = 0;
+        switch (this.ammoType) {
+            case 1:
+                power = 7;
+                calibre = 7;
+                this.shotCooldown = 1000;
+                break;
+            case 2:
+                power = 7;
+                calibre = 1;
+                this.shotCooldown = 0;
+                break;
+        }
         return new FiringSolution(
             this.muzzlePosition,
             this.gunElevation,
-            this.getGunPower(),
-            1
+            power,
+            calibre
         );
     }
 
@@ -361,7 +383,6 @@ export class Tank {
 
         // calculate rotation to keep the tank on the terrain
         // convert the key reference points on the tank from local to screen coords
-        const absoluteCoG = this.tankContainer.toGlobal(this.centerOfGravity);
         const absoluteFrontWheel = this.tankContainer.toGlobal(this.frontWheel);
         const absoluteBackWheel = this.tankContainer.toGlobal(this.backWheel);
         const absoluteCenterContact = this.tankContainer.toGlobal(this.centerContactPoint);

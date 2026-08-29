@@ -1,4 +1,5 @@
-import { Application, Container, FederatedPointerEvent, Ticker, type PointData } from "pixi.js";
+import { Application, Container, FederatedPointerEvent, Ticker} from "pixi.js";
+import { Renderer, type RenderStyle} from "./renderer";
 import { RockManager } from "./rock_manager";
 import { Landscape } from "./landscape";
 import { Tank } from "./tank";
@@ -6,17 +7,18 @@ import { Debugger } from "./debug";
 import { CrossHairs } from "./crosshairs";
 import { ShotManager } from "./shot_manager";
 import { TextManager, Label } from "./text_renderer";
+import { SoundManager, type Effect } from "./sound_manager";
 
 const GROUND_LEVEL = 150;
 const MAX_ROCKS = 5;
 const MIN_ROCK_SIZE = 80;
 const MAX_ROCK_SIZE = 120;
 const STATIONARY_TIME = 5;  // how many seconds you are allowed to be stopped before failing the level
+const STUCK_THRESHOLD = 0.1;  // how much movement is needed per frame before you count as stuck 
+const UNSTUCK_THRESHOLD = 1;  // how much movement is needed to count as free again
 
 // Game states
-const PLAYING = 0;
-const GAME_OVER = 1;
-const JUST_LOST = 2;
+type GameState = "PAUSED" | "PLAYING" | "STUCK" | "JUST LOST" | "GAME OVER";
 
 export class Game {
     private app: Application;
@@ -29,20 +31,21 @@ export class Game {
     private shootingLayer: Container;
     private crosshairs: CrossHairs;
     private shotManager: ShotManager;
+    private soundManager: SoundManager;
     private worldLayer: Container;
     private UILayer: Container;
     private textManager: TextManager
     private debugInfo: Debugger;
     private debugLayer: Container;
-    private paused = false;
     private keys: Set<string>;
     private countdown: number;         // how long player has left to get moving again
     private countdownLabel: Label | null;
     private scoreLabel: Label;
     private score: number;
-    private gameState: number;
+    private gameState: GameState;
     private cameraShake: number;
     private firing: boolean;
+    private scroll: number;
     private onRestart: () => void;
     private tickerCallback: (ticker: Ticker) => void;
     private pointerMoveCallback = (event: FederatedPointerEvent) => {
@@ -50,25 +53,22 @@ export class Game {
         this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
     };
     private pointerDownCallback = () => {
-        if (this.gameState == PLAYING) {
-            this.firing = true;
-        }
+        this.firing = true;
     };
     private pointerUpCallback = () => {
-        if (this.gameState == PLAYING) {
-            this.firing = false;
-        }
+        this.firing = false;
     };
 
     
     public constructor(app: Application, onRestart: () => void) {
-        this.gameState = PLAYING;
+        this.gameState = "PLAYING";
         this.app = app;
         this.onRestart = onRestart;
         this.countdown = -1;
         this.countdownLabel = null;
         this.cameraShake = 0;
         this.firing = false;
+        this.scroll = 0;
         
         this.landscapeLayer = new Container();
         this.landscape = new Landscape(
@@ -134,78 +134,158 @@ export class Game {
         this.app.stage.on("pointerdown", this.pointerDownCallback);
         this.app.stage.on("pointerup", this.pointerUpCallback);
         this.app.stage.on("pointerupoutside", this.pointerUpCallback);
+
+        this.soundManager = new SoundManager();
+        this.soundManager.play("TANK_RUMBLE");
     }
 
     private update(deltaTime: number, elapsedMS: number) {
+        if (this.gameState == "PAUSED") {
+            // spacebar unpauses
+            if (this.keys.has("Space")) {
+                this.gameState = "PLAYING";
+            }
+            return;
+        }
+
+        this.updateThingsThatHappenEveryFrame(deltaTime);
+
+
+        // Things that happen only while playing or stuck
+        if (this.gameState == "PLAYING" || this.gameState == "STUCK") {
+            this.checkKeyboardActions();
+
+            // fire weapons
+            if (this.firing) {
+                const fired = this.shotManager.spawnShot(this.tank.getFiringSolution());
+                if (fired) {
+                    this.soundManager.fire(this.tank.ammoType);
+                }
+            }
+
+            this.checkIfTankIsStuck();
+            this.updateScore(0.1);
+        }
+        
+        if (this.gameState == "STUCK") {
+            this.updateCountdown(elapsedMS);
+            this.checkIfTankIsStuck();  // check if we have managed to get free
+        }           
+
+        if (this.gameState == "JUST LOST") {
+
+            this.gameState = "GAME OVER";
+        }
+
+        // Things that happen only when the game is over
+        if (this.gameState == "GAME OVER") {
+            // spacebar restarts
+            if (this.keys.has("Space")) {
+                this.requestRestart();
+            }
+        }
+    }
+
+    private updateThingsThatHappenEveryFrame(deltaTime: number) {
+        // Camera shake effect fades away automatically
         if (this.cameraShake > 0) {
             const shakeX = Math.random() * this.cameraShake * 2 - this.cameraShake;
             const shakeY = Math.random() * this.cameraShake * 2 - this.cameraShake;
             this.worldLayer.position.set(shakeX, shakeY);
             this.cameraShake *= 0.95;
         }
-        
-        if (this.paused) {
-            return
-        }
 
-        if (this.keys.has("Space")) {
-            if (this.gameState == PLAYING) {
-                this.paused = !this.paused;
-            } else if (this.gameState == JUST_LOST) {
-                queueMicrotask(() => {  // make sure we don't try to restart in the middle of a Pixi update
-                    this.onRestart();
-                });
-                this.gameState = GAME_OVER;
-                return;
-            }
-        } else if (this.keys.has("KeyX")) {
-            this.explodeTank();
-        }
-
-        if (this.firing) {
-            this.shotManager.spawnShot(this.tank.getFiringSolution());
-        }
-
-        this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        // update bullets       
         this.shotManager.update(deltaTime, this.debugInfo);
-        this.checkRockImpacts()
         this.checkShotImpacts();
-        
-        // move tank across landscape and adjust barrel elevation
-        let scroll = this.tank.update(this.crosshairs.position(), this.debugInfo);
-        this.landscape.update(this.app.screen.width, scroll);
 
-        if (scroll < 0.01) {  // tank has stopped moving
-            if (this.countdown === -1) {
+        // update rocks
+        this.rockManager.update(this.app.screen.width, this.app.screen.height, deltaTime, this.debugInfo);
+        this.checkRockImpacts()
+
+        // move tank across landscape and adjust barrel elevation
+        this.scroll = this.tank.update(this.crosshairs.position(), this.debugInfo);
+        this.landscape.update(this.app.screen.width, this.scroll);
+
+        // show debug overlay
+        //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
+    }
+
+    private checkKeyboardActions() {
+        // spacebar pauses
+        if (this.keys.has("Space")) {
+            this.gameState = "PAUSED"; 
+
+        // check other keys
+        } else if (this.keys.has("KeyX")) {  // DEBUG - press X to suicide
+            this.explodeTank();
+            this.endGame();
+        } else if (this.keys.has("Digit1")) {
+            this.changeRenderStyle("FAST");
+        } else if (this.keys.has("Digit2")) {
+            this.changeRenderStyle("VECTOR");
+        } else if (this.keys.has("Digit3")) {
+            this.changeRenderStyle("CHUNKY");
+        } else if (this.keys.has("Digit4")) {
+            this.changeRenderStyle("NEON");
+        } else if (this.keys.has("KeyQ")) {
+            this.tank.ammoType = 1;
+        } else if (this.keys.has("KeyW")) {
+            this.tank.ammoType = 2;
+        } else if (this.keys.has("Digit4")) {
+            this.changeRenderStyle("NEON");
+        } else {
+            this.keys.forEach(function(value) {console.log(value)});  // DEBUG - show keycode in console
+        }
+    }
+
+    private checkIfTankIsStuck() {
+        if (this.scroll < STUCK_THRESHOLD) {  // tank has stopped moving
+            if (this.gameState == "PLAYING") {
+                this.gameState = "STUCK";
                 this.countdown = STATIONARY_TIME;
                 this.countdownLabel = this.textManager.addLabel(
                     STATIONARY_TIME.toString(), 
                     {x: this.app.screen.width/2, y: 100}, 
                     50);
-            } else if (this.countdownLabel) {
-                this.countdown -= elapsedMS/1000;
-                if (this.countdown > 0) {
-                    // only update the countdown text if the number of seconds left is different
-                    // otherwise we are pointlessly throwing away and recreating a lot of VectorChar objects
-                    //if (Math.ceil(this.countdown).toString() != this.countdownLabel.text) {
-                        this.countdownLabel.setText(Math.ceil(this.countdown).toString());
-                    //}
-                    // text size uses the decimal part of the time, so at n.99 seconds, the text has size (99 * 200) + 10
-                    // and at n.01 seconds, the text has been shrunk to just 12
-                    const size = (this.countdown - Math.floor(this.countdown)) * 200 + 10;
-                    this.countdownLabel.resize(size);
-                } else {
-                    // time's up!
-                    this.gameOver();
-                }
+                this.soundManager.stop("TANK_RUMBLE");
+                this.soundManager.play("TANK_STUCK");
             }
-        } else if (this.gameState == PLAYING) {
-            this.updateScore(0.1);
-            this.countdown = -1;
-            if (this.countdownLabel) this.countdownLabel.destroy();
+        } else if (this.scroll > UNSTUCK_THRESHOLD) {  // tank is rolling again 
+            if (this.gameState == "STUCK") {  // unstick the tank
+                // get rid of the old countdown label
+                if (this.countdownLabel) {
+                    this.countdownLabel.destroy();
+                }
+                this.gameState = "PLAYING";
+                this.soundManager.stop("TANK_STUCK");
+                this.soundManager.play("TANK_RUMBLE");
+            }
         }
-        
-        //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
+    }
+
+    private updateCountdown(elapsedMS: number) {
+        this.countdown -= elapsedMS/1000;
+        if (this.countdown > 0) {
+            // only update the countdown text if the number of seconds left is different
+            // otherwise we are pointlessly throwing away and recreating a lot of VectorChar objects
+            if (this.countdownLabel) {
+                if (Math.ceil(this.countdown).toString() != this.countdownLabel.text) {
+                    this.countdownLabel.setText(Math.ceil(this.countdown).toString());
+                }
+                // text size uses the decimal part of the time, so at n.99 seconds, the text has size (99 * 200) + 10
+                // and at n.01 seconds, the text has been shrunk to just 12
+                const size = (this.countdown - Math.floor(this.countdown)) * 200 + 10;
+                this.countdownLabel.resize(size);
+            }
+        } else {
+            // time's up!
+            this.soundManager.stop("TANK_RUMBLE");
+            this.soundManager.stop("TANK_STUCK");
+            this.soundManager.play("TANK_DEAD");
+            this.soundManager.stopAll();4
+            this.endGame();
+        }
     }
 
     private updateScore(points: number) {
@@ -230,6 +310,7 @@ export class Game {
                 const rock = this.rockManager.findCollision(p);
                 if (rock) {
                     this.updateScore(rock.size);  // more points for bigger rocks!
+                    this.soundManager.play("SMALL_EXPLOSION");
                     this.shotManager.despawnShot(i);
                     this.rockManager.splitRock(rock);
                     this.rockManager.despawnRock(rock);
@@ -256,7 +337,7 @@ export class Game {
                     if (!this.tank.isDead())  {  // only blow up tank if not already dead!
                         this.cameraShake = 10;
                         this.explodeTank();
-                        this.gameOver();
+                        this.endGame();
                     }
                 } else {
                     // smaller ones bounce off harmlessly
@@ -270,6 +351,8 @@ export class Game {
                 if (collidePoint) {
                     this.cameraShake = (rock.size ** 2) / 200;
                     if (rock.willShatter()) {
+                        const volume = this.soundVolume(collidePoint.x - this.tank.getPosition().x);
+                        this.soundManager.play("ROCK_IMPACT", volume);
                         // big rocks break into smaller ones
                         this.rockManager.splitRock(rock);
                         this.landscape.impact(rock, collidePoint, this.debugInfo);
@@ -294,7 +377,8 @@ export class Game {
         );
     }
 
-    private gameOver() {
+    private endGame() {
+        // end the game
         const gameOverMessage = this.textManager.addLabel(
             "GAME 0VER",
             {x:0, y:0},
@@ -304,7 +388,7 @@ export class Game {
         gameOverMessage.setPosition(
             this.app.screen.width/2 - gameOverMessage.getWidth()/2, 
             this.app.screen.height/2 - gameOverMessage.height/2);
-        this.gameState = JUST_LOST;
+        this.gameState = "JUST LOST";
     }
 
     public destroy() {
@@ -321,6 +405,24 @@ export class Game {
         this.shotManager.destroy();
         this.textManager.destroy()
         this.debugInfo.destroy();
+    }
+
+    private requestRestart() {
+        // make sure we don't try to restart in the middle of a Pixi update
+        queueMicrotask(() => {  
+            this.onRestart();
+        });
+    }
+
+    private changeRenderStyle(style: RenderStyle) {
+        Renderer.style = style;
+        this.requestRestart();21
+    }
+
+    private soundVolume(distance: number) {
+        // returns a value from 0 to 1, based on how far away the sound is
+        let relativeDistance = 1-(Math.abs(distance) / this.app.screen.width);
+          return Math.min(1.0, relativeDistance);
     }
 
 }
