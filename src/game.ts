@@ -7,7 +7,7 @@ import { Debugger } from "./debug";
 import { CrossHairs } from "./crosshairs";
 import { ShotManager } from "./shot_manager";
 import { TextManager, Label } from "./text_renderer";
-import { SoundManager, /*type Effect*/ } from "./sound_manager";
+import { SoundManager } from "./sound_manager";
 
 const DEBUG_GLOBAL = false;
 const GROUND_LEVEL = 150;

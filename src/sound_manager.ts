@@ -13,16 +13,16 @@ export type Effect =
 
 export class SoundManager {
     public constructor() {
-        sound.add("MACHINE_GUN", "/sounds/light_machine_gun.mp3");
-        sound.add("CANNON_SHOT", "/sounds/cannon_shot.mp3");
-        sound.add("CANNON_RELOAD", "/sounds/cannon_reload.mp3");
-        sound.add("ROCK_IMPACT", "/sounds/rock_impact.mp3");
-//        sound.add("TANK_RUMBLE", "/sounds/tank_rumble.mp3");
-        sound.add("TANK_RUMBLE", "/sounds/robot_tank.mp3");
-        sound.add("TANK_STUCK", "/sounds/robot_tank.mp3");
-        sound.add("TANK_DEAD", "/sounds/robot_tank.mp3");
-        sound.add("BIG_EXPLOSION", "/sounds/tank_explosion.mp3");
-        sound.add("SMALL_EXPLOSION", "/sounds/rock_explosion.mp3");
+        sound.add("MACHINE_GUN", "sounds/light_machine_gun.mp3");
+        sound.add("CANNON_SHOT", "sounds/cannon_shot.mp3");
+        sound.add("CANNON_RELOAD", "sounds/cannon_reload.mp3");
+        sound.add("ROCK_IMPACT", "sounds/rock_impact.mp3");
+//        sound.add("TANK_RUMBLE", "sounds/tank_rumble.mp3");
+        sound.add("TANK_RUMBLE", "sounds/robot_tank.mp3");
+        sound.add("TANK_STUCK", "sounds/robot_tank.mp3");
+        sound.add("TANK_DEAD", "sounds/robot_tank.mp3");
+        sound.add("BIG_EXPLOSION", "sounds/tank_explosion.mp3");
+        sound.add("SMALL_EXPLOSION", "sounds/rock_explosion.mp3");
         sound.volumeAll = 1.0;
     }
 
@@ -39,6 +39,10 @@ export class SoundManager {
  
     public play(name: Effect, volume?: number) {
         if (!volume) volume = 1;  // default to full volume
+        console.log({
+            volume: sound.volume,
+            contextState: sound.context?.audioContext?.state
+        });
         switch (name) {
             case "CANNON_SHOT":
                 sound.play(name, {start: 1.3, end: 2.3, volume: 0.5});
