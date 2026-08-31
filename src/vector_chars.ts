@@ -1,7 +1,6 @@
 // Vector style outlines for letters and numbers
 import { type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
-import { Debugger } from "./debug";
 
 export class VectorChar {
     public rendered: Renderer;

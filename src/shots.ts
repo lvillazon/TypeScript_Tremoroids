@@ -1,7 +1,6 @@
 // all projectiles fired by the tank
 import { type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
-import { Debugger } from "./debug";
 
 const GRAVITY = 0.04;
 
@@ -51,21 +50,4 @@ export class Shot {
         return this.rendered.image.position;
     }
 
-    // public collidesWith(ground: Landscape, debugHook: Debugger): PointData | null {
-    //     // check if any of the points in the array are inside this rock
-    //     // let absolutePoints: PointData[] = [];
-    //     // for (let i=0; i<this.outline.points.length; i++) {
-    //     //     absolutePoints.push(this.outline.points[i])
-    //     // }
-    //     const outline = this.absoluteOutline();
-    //     for (let i=0; i<outline.points.length; i+=2) {
-    //         const groundX = outline.points[i];
-    //         const groundY = ground.heightAt(groundX);
-    //         if (outline.contains(groundX, groundY)) {
-    //             debugHook.drawPoint({x: groundX, y: groundY}, 0xFFFF00);
-    //             return {x: groundX, y: groundY};
-    //         }
-    //     }
-    //     return null;
-    // }
 }

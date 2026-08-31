@@ -5,6 +5,7 @@ import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
 import type { Landscape } from "./landscape";
 
+const DEBUG = false;
 const ANIMATION_FRAMES = 5;
 const SPEED = 1;
 const GRAVITY = 0.02;
@@ -14,9 +15,6 @@ function distanceBetween(point1: PointData, point2:PointData): number {
     return Math.sqrt(((point1.x - point2.x) **2) + ((point1.y - point2.y) **2));
 }
     
-// function toRadians(angle: number): number {
-//     return angle * Math.PI / 180;
-// }
 
 function slope(point1: PointData, point2: PointData): number {
     // gradient of the line connecting these points   
@@ -372,7 +370,9 @@ export class Tank {
         this.muzzlePosition = this.barrel.image.toGlobal({
             x: this.gunLength,
             y: 0});
-        debugHook.drawPoint(this.tankContainer.toGlobal(this.barrel.image.position), 0x00FF00);
+
+        if (DEBUG)
+            debugHook.drawPoint(this.tankContainer.toGlobal(this.barrel.image.position), 0x00FF00);
 
     }
 
@@ -432,12 +432,12 @@ export class Tank {
         } else {
             this.sprite.texture = this.frames[ANIMATION_FRAMES];
         }
-        //debugHook.drawLine(absoluteBackWheel, absoluteFrontWheel, 0x00FF00);        
-        //debugHook.drawPoint(this.screenPosition, 0xFFFFFF);
-        //debugHook.drawPoint(absoluteFrontWheel, 0x00FF00);
-        //debugHook.drawPoint(absoluteCoG, 0xFFFF00);
-        //debugHook.drawPoint(absoluteBackWheel, 0xFF0000);
-        
+
+        if (DEBUG) {
+            debugHook.drawLine(absoluteBackWheel, absoluteFrontWheel, 0x00FF00);        
+            debugHook.drawPoint(absoluteFrontWheel, 0x00FF00);
+            debugHook.drawPoint(absoluteBackWheel, 0xFF0000);
+        }
         return this.velocity.x;  // used to tell the landscape how much to scroll
     }
 

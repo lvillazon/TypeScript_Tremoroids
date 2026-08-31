@@ -3,6 +3,8 @@ import { Shot } from "./shots";
 import { Container } from "pixi.js";
 import { Debugger } from "./debug";
 
+const DEBUG = false;
+
 export class ShotManager {
     private displayLayer: Container;
     public shots: Shot[] = [];
@@ -12,9 +14,14 @@ export class ShotManager {
     }
 
     update(interval: number, debugHook: Debugger) {
-        for(let i=0; i<this.shots.length; i++) {
-            let s = this.shots[i];
+        for(const s of this.shots) {
             s.update(interval);
+        }
+
+        if (DEBUG) {
+            for(const s of this.shots) {
+                debugHook.drawPoint(s.position());
+            }
         }
     }
 

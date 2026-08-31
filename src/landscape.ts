@@ -5,6 +5,7 @@ import { Container, type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
 
+const DEBUG = false;
 const ROUGHNESS = 0.1;
 
 export class Landscape {
@@ -21,7 +22,7 @@ export class Landscape {
         this.outline.push({x: windowWidth, y: groundHeight});
     }
 
-    update(width: number, scroll: number) {
+    update(width: number, scroll: number, debugHook: Debugger) {
         // scroll the landscape
         let i = 0;
         for (i=0; i<this.outline.length; i++) {
@@ -51,9 +52,16 @@ export class Landscape {
         this.surfaceLine.clear();
         this.surfaceLine.moveTo(0, this.outline[0].y);
         this.surfaceLine.polyLine(this.outline);
-        // for (let i=0; i<this.outline.length; i++) {
-        //     this.surfaceLine.lineTo(this.outline[i].x, this.outline[i].y);
-        // }
+
+        if (DEBUG) {
+            // draw the absolute position of the ground
+            // by getting the height of the landscape at every single x value
+            // this is very slow, so just for debugging, ok?
+            for (let x=0; x<width; x++) {
+                debugHook.drawPoint({x: x, y: this.heightAt(x)});
+            }
+        }
+
     }
 
     // a non-random, fixed terrain to test tank movement

@@ -1,8 +1,8 @@
 import { Rock } from "./rocks";
-import { Landscape } from "./landscape";
 import { Container, type PointData } from "pixi.js";
 import { Debugger } from "./debug";
 
+const DEBUG = false;
 const SPAWN_CHANCE = 0.01
 const HORIZONTAL_VARIABILITY = 2; // how much horizontal velocity is added to shattered rocks
 const VERTICAL_DECAY = 3; // how much vertical velocity drops for shattered rocks
@@ -13,14 +13,12 @@ export class RockManager {
     private maxRocks: number;
     private minSize: number;
     private maxSize: number;
-    private ground: Landscape;
     
-    constructor(layer: Container, ground: Landscape, maxRocks: number, minSize:number, maxSize:number) {
+    constructor(layer: Container, maxRocks: number, minSize:number, maxSize:number) {
         this.displayLayer = layer;
         this.maxRocks = maxRocks;
         this.minSize = minSize;
         this.maxSize = maxSize;
-        this.ground = ground;
     }
 
     public getRock(index: number): Rock {
@@ -51,6 +49,19 @@ export class RockManager {
             let startVelocity = {x: Math.random() * 2, y: 0};
             this.spawnRock(startPoint, startVelocity, size)
         }
+
+        if (DEBUG) {
+            // draw the absolute positions of each rock vertex on the impacting side
+            for (let i=0; i<this.getRockCount(); i++) {
+                const r = this.getRock(i)
+                const rockOutline = r.getImpactOutline();
+                debugHook.drawPoint(r.position);
+                for (const vertex of rockOutline) {
+                    debugHook.drawPoint(vertex);
+                }
+            }
+        }
+
     }
 
     splitRock(r: Rock) {

@@ -7,8 +7,9 @@ import { Debugger } from "./debug";
 import { CrossHairs } from "./crosshairs";
 import { ShotManager } from "./shot_manager";
 import { TextManager, Label } from "./text_renderer";
-import { SoundManager, type Effect } from "./sound_manager";
+import { SoundManager, /*type Effect*/ } from "./sound_manager";
 
+const DEBUG_GLOBAL = false;
 const GROUND_LEVEL = 150;
 const MAX_ROCKS = 5;
 const MIN_ROCK_SIZE = 80;
@@ -80,7 +81,6 @@ export class Game {
         this.rockLayer = new Container();
         this.rockManager = new RockManager(
             this.rockLayer, 
-            this.landscape, 
             MAX_ROCKS, MIN_ROCK_SIZE, MAX_ROCK_SIZE);
 
         this.playerLayer = new Container();
@@ -102,7 +102,7 @@ export class Game {
         this.score = 0;
 
         this.debugLayer = new Container();
-        this.debugInfo = new Debugger(this.debugLayer, this.rockManager);
+        this.debugInfo = new Debugger(this.debugLayer);
 
         // add all the layers in the right order, from background to foreground
         this.worldLayer = new Container();
@@ -205,10 +205,11 @@ export class Game {
 
         // move tank across landscape and adjust barrel elevation
         this.scroll = this.tank.update(this.crosshairs.position(), this.debugInfo);
-        this.landscape.update(this.app.screen.width, this.scroll);
+        this.landscape.update(this.app.screen.width, this.scroll, this.debugInfo);
 
         // show debug overlay
-        //this.debugInfo.update(this.app.screen.width, this.app.screen.height);
+        if (DEBUG_GLOBAL)
+            this.debugInfo.update(this.app.screen.width, this.app.screen.height);
     }
 
     private checkKeyboardActions() {

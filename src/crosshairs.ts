@@ -3,6 +3,8 @@ import { Container, type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 import { Debugger } from "./debug";
 
+const DEBUG = false;
+
 export class CrossHairs {
     private displayLayer: Container;
     private size: number;
@@ -33,6 +35,9 @@ export class CrossHairs {
     public update(point: PointData, debugHook: Debugger) {
         // crosshairs always follow the mouse
         this.rendered.image.position = point;
+        if (DEBUG) {
+            debugHook.drawPoint(point);
+        }
     }
 
     public position(): PointData {
