@@ -15,7 +15,8 @@ X Tank explodes when hit by rocks (or its own shells?)
   Boulders too small to shatter pile up on the landscape
 X Camera shake when rocks hit/shells explode/cannon fires
   sound effects - tank engine, rock impacts, cannon firing, shot impacts, tank explosion
-  check deployment options
+  make the criteria for tank getting stuck more predictable
+X check deployment options
   different weapons - rapid fire machine gun, slow cannon, flak cannon, TOW/homing missile
   - need to add some way to limit the rate of fire for different weapons
 

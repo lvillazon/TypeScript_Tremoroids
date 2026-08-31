@@ -141,8 +141,8 @@ export class Landscape {
 
     public impact(impactor: Rock | Shot, impactPoint: PointData, debugHook: Debugger) {
         // make a dent in the landscape due to this rock
-        let craterRadius = impactor.size;
-        let craterDepth = impactor.size;
+        let craterRadius = impactor.getPower();
+        let craterDepth = impactor.getPower();
 
         // create an irregular crater shape
         const craterPoints: PointData[] = [];
@@ -151,9 +151,10 @@ export class Landscape {
         for (let i=0; i<number_of_points; i++) {
             let theta = Math.PI * i / (number_of_points);
             wiggle = Math.random() * ROUGHNESS
-            const x = impactPoint.x + craterRadius * Math.cos(theta) + wiggle;
-            const y = impactPoint.y + craterDepth * Math.sin(theta) + wiggle;
-            let p: PointData = {x, y};
+            const p = {
+                x: impactPoint.x + craterRadius * Math.cos(theta) + wiggle,
+                y: impactPoint.y + craterDepth * Math.sin(theta) + wiggle
+            }
             craterPoints.push(p);
         }
         debugHook.drawPoly(craterPoints, 0xFF0000);

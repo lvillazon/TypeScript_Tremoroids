@@ -8,6 +8,7 @@ import { CrossHairs } from "./crosshairs";
 import { ShotManager } from "./shot_manager";
 import { TextManager, Label } from "./text_renderer";
 import { SoundManager } from "./sound_manager";
+import { ButtonManager } from "./button_manager";
 
 const DEBUG_GLOBAL = false;
 const GROUND_LEVEL = 150;
@@ -36,6 +37,7 @@ export class Game {
     private worldLayer: Container;
     private UILayer: Container;
     private textManager: TextManager
+    private buttonManager: ButtonManager;
     private debugInfo: Debugger;
     private debugLayer: Container;
     private keys: Set<string>;
@@ -54,7 +56,11 @@ export class Game {
         this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
     };
     private pointerDownCallback = () => {
-        this.firing = true;
+        if (this.gameState == "GAME OVER") {
+            this.requestRestart();
+        } else {
+            this.firing = true;
+        }
     };
     private pointerUpCallback = () => {
         this.firing = false;
@@ -97,9 +103,23 @@ export class Game {
 
         this.UILayer = new Container();
         this.textManager = new TextManager(this.UILayer);
-        this.textManager.addLabel("SC0RE", {x:10, y:10}, 40);  // label for the player score
-        this.scoreLabel = this.textManager.addLabel("00000", {x: 170, y: 10}, 40);
+        const uiScale = this.app.screen.height / 32;
+        const scoreText = this.textManager.addLabel(
+            "SC0RE", {x:uiScale/2, y:uiScale/2}, uiScale);  // label for the player score
+        this.scoreLabel = this.textManager.addLabel(
+            "00000", {x: uiScale + scoreText.getWidth(), y: uiScale/2}, uiScale);
         this.score = 0;
+
+        this.buttonManager = new ButtonManager(this.UILayer);
+        this.buttonManager.addButton(
+            ButtonManager.cannonIcon(uiScale),
+            {x: uiScale/2, y: uiScale + scoreText.height},
+            uiScale,
+            () => {
+                this.tank.ammoType = 1;
+                return true;
+            }
+        );
 
         this.debugLayer = new Container();
         this.debugInfo = new Debugger(this.debugLayer);
@@ -233,8 +253,8 @@ export class Game {
             this.tank.ammoType = 1;
         } else if (this.keys.has("KeyW")) {
             this.tank.ammoType = 2;
-        } else if (this.keys.has("Digit4")) {
-            this.changeRenderStyle("NEON");
+        } else if (this.keys.has("KeyE")) {
+            this.tank.ammoType = 3;
         } else {
             this.keys.forEach(function(value) {console.log(value)});  // DEBUG - show keycode in console
         }
@@ -300,21 +320,42 @@ export class Game {
             const shot = this.shotManager.shots[i];
             const p = shot.position();
 
+            if (shot.explode) {
+                // explode flak shell
+                this.shotManager.spawnExplosion(p, 10);
+                this.shotManager.despawnShot(i);
+                return
+            }
+
             // collision check with the ground
             const groundImpact = this.landscape.collidesWithPoint(p);
             if (groundImpact) {
                 this.cameraShake = 1;
                 this.landscape.impact(shot, p, this.debugInfo);
+                this.rockManager.spawnDebris(
+                    {x: p.x, y: p.y},
+                    shot.getPower() / 5,
+                    shot.getPower() / 3
+                );
                 this.shotManager.despawnShot(i);
             } else {
                 // collision check with rocks
                 const rock = this.rockManager.findCollision(p);
                 if (rock) {
-                    this.updateScore(rock.size);  // more points for bigger rocks!
-                    this.soundManager.play("SMALL_EXPLOSION");
+                    if (shot.getPower() * 8 > rock.size) {
+                        this.updateScore(rock.size);  // more points for bigger rocks!
+                        this.soundManager.play("SMALL_EXPLOSION");
+                        this.rockManager.splitRock(rock);
+                        this.rockManager.despawnRock(rock);
+                    } else {
+                        // harmless debrisw
+                        this.rockManager.spawnDebris(
+                            p,
+                            shot.getPower() / 5,
+                            3
+                        );      
+                    }
                     this.shotManager.despawnShot(i);
-                    this.rockManager.splitRock(rock);
-                    this.rockManager.despawnRock(rock);
                 } 
                 else
                 // bounds check with the screen
@@ -340,9 +381,12 @@ export class Game {
                         this.explodeTank();
                         this.endGame();
                     }
-                } else {
+                } else if (rock.willBounce()) {
                     // smaller ones bounce off harmlessly
                     this.rockManager.bounceRock(rock);
+                } else {
+                    // anything smaller just vanishes
+                    this.rockManager.despawnRockByIndex(i);
                 }
 
             } else {
@@ -357,11 +401,7 @@ export class Game {
                         // big rocks break into smaller ones
                         this.rockManager.splitRock(rock);
                         this.landscape.impact(rock, collidePoint, this.debugInfo);
-                    } else {
-                        // smaller rocks become part of the landscape
-                        // TODO
-                        //console.log("too small for crater");
-                    }
+                    } 
                     this.rockManager.despawnRockByIndex(i);
                 }
             }

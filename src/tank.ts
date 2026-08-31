@@ -28,12 +28,14 @@ export class FiringSolution {
     public startPoint: PointData;
     public elevation: number;
     public speed: number;
+    public power: number;
     public size: number;
 
-    constructor(start: PointData, elevation: number, speed: number, size: number) {
+    constructor(start: PointData, elevation: number, speed: number, power: number, size: number) {
         this.startPoint = {x: start.x, y: start.y};
         this.elevation = elevation;
         this.speed = speed;
+        this.power = power;
         this.size = size;
     }
 }
@@ -315,23 +317,33 @@ export class Tank {
             return null;  // gun is still on cooldown
         }
         this.lastShotTime = Date.now();  // reset the cooldown
+        let speed: number = 0;
         let power: number = 0;
         let calibre: number = 0;
         switch (this.ammoType) {
-            case 1:
-                power = 7;
+            case 1:  // cannon
+                speed = 8;
+                power = 100;
                 calibre = 7;
                 this.shotCooldown = 1000;
                 break;
-            case 2:
-                power = 7;
+            case 2:  // machine gun
+                speed = 10;
+                power = 5;
                 calibre = 1;
                 this.shotCooldown = 0;
+                break;
+            case 3:  // Flak cannon
+                speed = 6;
+                power = 0;
+                calibre = 10;
+                this.shotCooldown = 3000;
                 break;
         }
         return new FiringSolution(
             this.muzzlePosition,
             this.gunElevation,
+            speed,
             power,
             calibre
         );

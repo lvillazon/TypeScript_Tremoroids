@@ -52,6 +52,15 @@ export class Rock {
         return (this.size > SHATTER_RADIUS);
     }
 
+    public willBounce(): boolean {
+        // is it big enough to bounce off the tank?
+        return (this.size > SHATTER_RADIUS/2);
+    }
+
+    public getPower(): number {
+        return this.size;
+    }
+
     public update(interval: number) {
         this.rendered.image.rotation += this.rotationSpeed * interval;
         this.velocity.y += GRAVITY;

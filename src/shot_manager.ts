@@ -1,6 +1,6 @@
 import { FiringSolution } from "./tank";
 import { Shot } from "./shots";
-import { Container } from "pixi.js";
+import { Container, type PointData } from "pixi.js";
 import { Debugger } from "./debug";
 
 const DEBUG = false;
@@ -29,14 +29,29 @@ export class ShotManager {
         if (firingSolution) {
             const s = new Shot(
                 firingSolution.startPoint,
-                firingSolution.size, 
+                firingSolution.elevation,
                 firingSolution.speed, 
-                firingSolution.elevation)
+                firingSolution.power,
+                firingSolution.size);
             this.shots.push(s);
             this.displayLayer.addChild(s.rendered.image);
             return true;
         }
         return false;  // no shot fired;
+    }
+    
+    public spawnExplosion(position: PointData, size: number) {
+        for (let i=0; i<(size * 3); i++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const f = new FiringSolution(
+                position,
+                angle,
+                size, // speed
+                size, // power
+                5  // size
+            );
+            this.spawnShot(f);
+        }
     }
 
     public despawnShot(shotNumber: number) {

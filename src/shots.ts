@@ -8,14 +8,19 @@ export class Shot {
     public rendered: Renderer;
     public velocity: PointData;
     public size: number;
+    public power: number;
+    public explode: boolean;
 
     public constructor(
-        startPoint: PointData, 
-        size: number, 
-        startSpeed: number, 
-        elevation: number) {
+        startPoint: PointData,
+        elevation: number,
+        startSpeed: number,
+        shotPower: number,
+        size: number) {
         
         this.size = size;
+        this.power = shotPower;
+        this.explode = false;
         this.rendered = new Renderer();
         const points: PointData[] = [
             {x: 0.0       , y: 0.0},
@@ -38,16 +43,28 @@ export class Shot {
         };
     }
 
+    public getPower(): number {
+        return this.power;
+    }
+
     public update(interval: number) {
         //this.rendered.image.rotation += this.rotationSpeed * interval;
         this.velocity.y += GRAVITY;
         this.rendered.image.position.x += this.velocity.x * interval;
         this.rendered.image.position.y += this.velocity.y * interval;
         this.rendered.image.rotation = Math.atan2(this.velocity.y, this.velocity.x) - Math.PI/2;
+        // flak shots explode at the top of their arc
+        if (this.power == 0 && this.velocity.y > 0) {
+            this.explode = true;
+        }
     }
 
     public position(): PointData {
         return this.rendered.image.position;
+    }
+
+    public leavesDebris(): boolean {
+        return false;  // stop old shells piling up on the ground like rocks do
     }
 
 }
