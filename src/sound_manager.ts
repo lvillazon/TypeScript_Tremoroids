@@ -39,10 +39,10 @@ export class SoundManager {
  
     public play(name: Effect, volume?: number) {
         if (!volume) volume = 1;  // default to full volume
-        console.log({
-            volume: sound.volume,
-            contextState: sound.context?.audioContext?.state
-        });
+        // console.log({
+        //     volume: sound.volume,
+        //     contextState: sound.context?.audioContext?.state
+        // });
         switch (name) {
             case "CANNON_SHOT":
                 sound.play(name, {start: 1.3, end: 2.3, volume: 0.5});

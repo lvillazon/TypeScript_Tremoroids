@@ -120,6 +120,24 @@ export class Game {
                 return true;
             }
         );
+        this.buttonManager.addButton(
+            ButtonManager.bulletIcon(uiScale),
+            {x: uiScale/2, y: uiScale * 2.5 + scoreText.height},
+            uiScale,
+            () => {
+                this.tank.ammoType = 1;
+                return true;
+            }
+        );
+        this.buttonManager.addButton(
+            ButtonManager.cannonIcon(uiScale),
+            {x: uiScale/2, y: uiScale * 4 + scoreText.height},
+            uiScale,
+            () => {
+                this.tank.ammoType = 1;
+                return true;
+            }
+        );
 
         this.debugLayer = new Container();
         this.debugInfo = new Debugger(this.debugLayer);
