@@ -104,6 +104,7 @@ export class Game {
         this.UILayer = new Container();
         this.textManager = new TextManager(this.UILayer);
         const uiScale = this.app.screen.height / 32;
+        console.log("UIScale =" + uiScale);
         const scoreText = this.textManager.addLabel(
             "SC0RE", {x:uiScale/2, y:uiScale/2}, uiScale);  // label for the player score
         this.scoreLabel = this.textManager.addLabel(
@@ -130,7 +131,7 @@ export class Game {
             }
         );
         this.buttonManager.addButton(
-            ButtonManager.cannonIcon(uiScale),
+            ButtonManager.flakIcon(uiScale),
             {x: uiScale/2, y: uiScale * 4 + scoreText.height},
             uiScale,
             () => {

@@ -63,7 +63,7 @@ export class ButtonManager {
 
     public static cannonIcon(size: number): Renderer {
         const icon = new Renderer();
-        const points: PointData[] = [
+        let points: PointData[] = [
             {x: 0.0       , y: 0.0},
             {x: 0.0       , y: 0.2 * size},
             {x: size      , y: 0.2 * size},
@@ -77,16 +77,17 @@ export class ButtonManager {
             {x: size      , y: 0.6 * size},
             {x: size      , y: 0.0}
         ];
+        points = this.scalePoints(points, {x:0.4, y:0.6});
+        points = this.offsetPoints(points, {x:size/3, y:size/4});
         icon.poly(points);
-        icon.image.origin.set(size/1.9, size/2.2);
-        icon.image.scale.set(0.4, 0.6);
+        icon.image.origin.set(size/2, size/2);
         icon.image.rotation = Math.PI * 1.25;
         return icon
     }
 
     public static bulletIcon(size: number): Renderer {
         const icon = new Renderer();
-        const points: PointData[] = [
+        let points: PointData[] = [
             {x: 0.0       , y: 0.0},
             {x: 0.0       , y: 0.2 * size},
             {x: size      , y: 0.2 * size},
@@ -100,12 +101,41 @@ export class ButtonManager {
             {x: size      , y: 0.6 * size},
             {x: size      , y: 0.0}
         ];
+        points = this.scalePoints(points, {x:0.2, y:0.6});
+        points = this.offsetPoints(points, {x:size/2.5, y:size/4});
         icon.poly(points);
-        icon.poly(this.offsetPoints(points, {x: -45, y: 0}))
-        icon.poly(this.offsetPoints(points, {x: 45, y: 0}))
-        icon.image.origin.set(size/1.9, size/2.2);
-        icon.image.scale.set(0.2, 0.6);
+        icon.poly(this.offsetPoints(points, {x: -size/4, y: 0}));
+        icon.poly(this.offsetPoints(points, {x: size/4, y: 0}))
+        icon.image.origin.set(size/2, size/2);
         icon.image.rotation = Math.PI * 1.25;
+        return icon
+    }
+
+    public static flakIcon(size: number): Renderer {
+        const icon = new Renderer();
+        let points: PointData[] = this.scalePoints([
+            {x: 0.5 , y: 0.5 }, // vertical stroke
+            {x: 0.5 , y: 0.15},
+            {x: 0.6 , y: 0.25}, // top triangle
+            {x: 0.4 , y: 0.25},
+            {x: 0.5 , y: 0.15},
+            {x: 0.5 , y: 0.85}, // bottom tiangle
+            {x: 0.6 , y: 0.75},
+            {x: 0.4 , y: 0.75},
+            {x: 0.5 , y: 0.85},
+            {x: 0.5 , y: 0.5 }, // back slash
+            {x: 0.2 , y: 0.3 },
+            {x: 0.8 , y: 0.7 },
+            {x: 0.5 , y: 0.5 }, // forward slash
+            {x: 0.2 , y: 0.7 },
+            {x: 0.8 , y: 0.3 },
+            {x: 0.5 , y: 0.5 }
+        ], {x: size, y: size});
+        // points = this.scalePoints(points, {x:0.4, y:0.6});
+        // points = this.offsetPoints(points, {x:size/2.5, y:size/4});
+        icon.poly(points);
+        // icon.image.origin.set(size/2, size/2);
+        // icon.image.rotation = Math.PI * 1.25;
         return icon
     }
 
@@ -113,6 +143,14 @@ export class ButtonManager {
         const newPoints: PointData[] = [];
         for (const p of points) {
             newPoints.push({x: p.x + offset.x, y: p.y + offset.y});
+        }
+        return newPoints;
+    }
+
+    private static scalePoints(points: PointData[], scale: PointData) {
+        const newPoints: PointData[] = [];
+        for (const p of points) {
+            newPoints.push({x: p.x * scale.x, y: p.y * scale.y});
         }
         return newPoints;
     }
