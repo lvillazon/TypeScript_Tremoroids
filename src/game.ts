@@ -51,17 +51,21 @@ export class Game {
     private scroll: number;
     private onRestart: () => void;
     private tickerCallback: (ticker: Ticker) => void;
+    
     private pointerMoveCallback = (event: FederatedPointerEvent) => {
         const mouse = event.global;
         this.crosshairs.update({x: mouse.x, y: mouse.y}, this.debugInfo);
     };
-    private pointerDownCallback = () => {
+
+    private pointerDownCallback = (event: FederatedPointerEvent) => {
+        const mouse = event.global;
         if (this.gameState == "GAME OVER") {
             this.requestRestart();
-        } else {
+        } else if (!this.buttonManager.checkButtons({x: mouse.x, y: mouse.y})) {
             this.firing = true;
         }
     };
+
     private pointerUpCallback = () => {
         this.firing = false;
     };
@@ -126,7 +130,7 @@ export class Game {
             {x: uiScale/2, y: uiScale * 2.5 + scoreText.height},
             uiScale,
             () => {
-                this.tank.ammoType = 1;
+                this.tank.ammoType = 2;
                 return true;
             }
         );
@@ -135,7 +139,7 @@ export class Game {
             {x: uiScale/2, y: uiScale * 4 + scoreText.height},
             uiScale,
             () => {
-                this.tank.ammoType = 1;
+                this.tank.ammoType = 3;
                 return true;
             }
         );

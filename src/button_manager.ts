@@ -1,5 +1,5 @@
 // Vector style outlines for letters and numbers
-import { Container, Graphics, type PointData } from "pixi.js";
+import { Bounds, Container, Graphics, type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 
 export class Button {
@@ -7,7 +7,7 @@ export class Button {
     public bezelLayer: Container;
     public bezel: Renderer;
     public size: number;
-    private onClick: () => boolean;
+    public onClick: () => boolean;
 
      public constructor(icon: Renderer, size: number, onClick: () => boolean) {
         this.size = size;
@@ -37,6 +37,10 @@ export class Button {
     public setPosition(pos: PointData) {
         this.bezelLayer.position.set(pos.x, pos.y);
     }
+
+    public hitBox(): Bounds {
+        return this.bezel.image.getBounds();
+    }
 }
 
 export class ButtonManager {
@@ -59,6 +63,17 @@ export class ButtonManager {
         for (const button of this.buttons) {
             button.destroy();
         }
+    }
+
+    public checkButtons(mousePosition: PointData): boolean {
+        // trigger the callback function if the click coords fall within any of the buttons
+        for (const b of this.buttons) {
+            if (b.hitBox().containsPoint(mousePosition.x, mousePosition.y)) {
+                b.onClick();
+                return true;
+            }
+        }
+        return false;
     }
 
     public static cannonIcon(size: number): Renderer {
@@ -114,28 +129,35 @@ export class ButtonManager {
     public static flakIcon(size: number): Renderer {
         const icon = new Renderer();
         let points: PointData[] = this.scalePoints([
-            {x: 0.5 , y: 0.5 }, // vertical stroke
-            {x: 0.5 , y: 0.15},
-            {x: 0.6 , y: 0.25}, // top triangle
-            {x: 0.4 , y: 0.25},
-            {x: 0.5 , y: 0.15},
-            {x: 0.5 , y: 0.85}, // bottom tiangle
-            {x: 0.6 , y: 0.75},
-            {x: 0.4 , y: 0.75},
-            {x: 0.5 , y: 0.85},
-            {x: 0.5 , y: 0.5 }, // back slash
-            {x: 0.2 , y: 0.3 },
-            {x: 0.8 , y: 0.7 },
-            {x: 0.5 , y: 0.5 }, // forward slash
-            {x: 0.2 , y: 0.7 },
-            {x: 0.8 , y: 0.3 },
-            {x: 0.5 , y: 0.5 }
+            {x: 0.5 , y: 0.5 }, // middle
+            {x: 0.5 , y: 0.15}, // top of vertical stroke
+            {x: 0.55, y: 0.25}, // top triangle p1
+            {x: 0.45, y: 0.25}, // p2
+            {x: 0.5 , y: 0.15}, // back to top
+            {x: 0.5 , y: 0.85}, // bottom of vertical stroke
+            {x: 0.55, y: 0.75}, // bottom triangle p1
+            {x: 0.45, y: 0.75}, // p2
+            {x: 0.5 , y: 0.85}, // back to bottom
+            {x: 0.5 , y: 0.5 }, // middle
+            {x: 0.2 , y: 0.35}, // top left diagonal
+            {x: 0.25, y: 0.43}, // top left triangle p1
+            {x: 0.3 , y: 0.35}, // p2
+            {x: 0.2 , y: 0.35}, // back to top left
+            {x: 0.8 , y: 0.65}, // bottom right diagonal
+            {x: 0.75, y: 0.57}, // bottom right triangle p1
+            {x: 0.7 , y: 0.65}, // p2
+            {x: 0.8 , y: 0.65}, // back to bottom right
+            {x: 0.5 , y: 0.5 }, // middle
+            {x: 0.2 , y: 0.65}, // bottom left diagonal
+            {x: 0.25, y: 0.55}, // bottom left triangle p1
+            {x: 0.3 , y: 0.66}, // p2
+            {x: 0.2 , y: 0.65}, // back to bottom left
+            {x: 0.8 , y: 0.35}, // top right diagonal
+            {x: 0.75, y: 0.45}, // top right triangle p1
+            {x: 0.68, y: 0.33}, // p2
+            {x: 0.8 , y: 0.35}, // back to top right
         ], {x: size, y: size});
-        // points = this.scalePoints(points, {x:0.4, y:0.6});
-        // points = this.offsetPoints(points, {x:size/2.5, y:size/4});
         icon.poly(points);
-        // icon.image.origin.set(size/2, size/2);
-        // icon.image.rotation = Math.PI * 1.25;
         return icon
     }
 
