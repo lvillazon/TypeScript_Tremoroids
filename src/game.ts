@@ -68,6 +68,7 @@ export class Game {
 
     private pointerUpCallback = () => {
         this.firing = false;
+        this.shotManager.armFlak();
     };
 
     
@@ -143,6 +144,7 @@ export class Game {
                 return true;
             }
         );
+        this.buttonManager.selectButton(0);
 
         this.debugLayer = new Container();
         this.debugInfo = new Debugger(this.debugLayer);
@@ -150,12 +152,12 @@ export class Game {
         // add all the layers in the right order, from background to foreground
         this.worldLayer = new Container();
         this.worldLayer.addChild(this.landscapeLayer);
-        this.worldLayer.addChild(this.shootingLayer);
         this.worldLayer.addChild(this.playerLayer);
         this.worldLayer.addChild(this.debugLayer);
         this.app.stage.addChild(this.worldLayer);
         this.app.stage.addChild(this.rockLayer);
         this.app.stage.addChild(this.UILayer);
+        this.worldLayer.addChild(this.shootingLayer);
         
         this.tickerCallback = (ticker: Ticker) => 
             this.update(ticker.deltaTime, ticker.elapsedMS);
@@ -469,6 +471,8 @@ export class Game {
         this.shotManager.destroy();
         this.textManager.destroy()
         this.debugInfo.destroy();
+        this.soundManager.destroy();
+        this.buttonManager.destroy();
     }
 
     private requestRestart() {
@@ -479,7 +483,7 @@ export class Game {
     }
 
     private changeRenderStyle(style: RenderStyle) {
-        Renderer.style = style;
+        Renderer.globalStyle = style;
         this.requestRestart();21
     }
 

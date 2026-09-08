@@ -83,4 +83,8 @@ export class SoundManager {
         sound.volumeAll = 0;
     }
 
+    public destroy() {
+        sound.stopAll();
+    }
+
 }

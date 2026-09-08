@@ -337,7 +337,7 @@ export class Tank {
                 speed = 6;
                 power = 0;
                 calibre = 10;
-                this.shotCooldown = 3000;
+                this.shotCooldown = 1500;
                 break;
         }
         return new FiringSolution(

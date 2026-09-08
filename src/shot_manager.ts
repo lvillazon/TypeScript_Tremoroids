@@ -13,7 +13,7 @@ export class ShotManager {
         this.displayLayer = layer;
     }
 
-    update(interval: number, debugHook: Debugger) {
+    public update(interval: number, debugHook: Debugger) {
         for(const s of this.shots) {
             s.update(interval);
         }
@@ -25,7 +25,22 @@ export class ShotManager {
         }
     }
 
-    spawnShot(firingSolution: FiringSolution | null) {
+    public armFlak() {
+        // set any and all flak rounds to explode on the next mouse click
+        for (const s of this.shots) {
+            if (s.getPower() == 0) {
+                s.armed = true;
+            }
+        }
+    }
+
+    public spawnShot(firingSolution: FiringSolution | null) {
+        if (this.shots.length > 0) {
+            const lastShotFired = this.shots[this.shots.length-1];
+            if (lastShotFired.canBeDetonated()) {
+                lastShotFired.explode = true;
+            }
+        }
         if (firingSolution) {
             const s = new Shot(
                 firingSolution.startPoint,

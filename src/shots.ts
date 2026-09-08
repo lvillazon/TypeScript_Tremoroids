@@ -9,6 +9,7 @@ export class Shot {
     public velocity: PointData;
     public size: number;
     public power: number;
+    public armed: boolean;
     public explode: boolean;
 
     public constructor(
@@ -20,6 +21,7 @@ export class Shot {
         
         this.size = size;
         this.power = shotPower;
+        this.armed = false;
         this.explode = false;
         this.rendered = new Renderer();
         const points: PointData[] = [
@@ -45,6 +47,15 @@ export class Shot {
 
     public getPower(): number {
         return this.power;
+    }
+
+    public canBeDetonated(): boolean {
+        // only flak shots can detonate 
+        // and you must arm them by letting go of the mouse button and re-clicking
+        if (this.power == 0 && !this.explode && this.armed) {
+            return true;
+        }
+        return false;
     }
 
     public update(interval: number) {

@@ -1,5 +1,5 @@
 // Vector style outlines for letters and numbers
-import { Bounds, Container, Graphics, type PointData } from "pixi.js";
+import { Bounds, Container, ColorMatrixFilter, type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 
 export class Button {
@@ -14,7 +14,7 @@ export class Button {
         this.onClick = onClick;
         this.icon = icon;
         this.bezelLayer = new Container();
-        this.bezel = this.drawBorder();
+        this.bezel = this.drawBorder(false);
         this.bezelLayer.addChild(this.icon.image);
         this.bezelLayer.addChild(this.bezel.image);
     }
@@ -24,13 +24,34 @@ export class Button {
         this.bezel.image.destroy();
     }
 
-    private drawBorder(): Renderer {
+    public select() {
+        this.bezelLayer.removeChild(this.bezel.image);
+        this.bezel = this.drawBorder(true);
+        this.bezelLayer.addChild(this.bezel.image);
+    }
+
+    public deselect() {
+        this.bezelLayer.removeChild(this.bezel.image);
+        this.bezel = this.drawBorder(false);
+        this.bezelLayer.addChild(this.bezel.image);
+    }
+
+    private drawBorder(selected: boolean): Renderer {
         const border = new Renderer();
         border.moveTo(0, 0);
         border.lineTo(this.size, 0);
         border.lineTo(this.size, this.size);
         border.lineTo(0, this.size);
         border.lineTo(0, 0);
+
+        if (selected) {
+            const width = this.size/10;
+            border.moveTo(-width, -width);
+            border.lineTo(this.size+width, -width);
+            border.lineTo(this.size+width, this.size+width);
+            border.lineTo(-width, this.size+width);
+            border.lineTo(-width, -width);
+        }
         return border;
     }
 
@@ -70,10 +91,27 @@ export class ButtonManager {
         for (const b of this.buttons) {
             if (b.hitBox().containsPoint(mousePosition.x, mousePosition.y)) {
                 b.onClick();
+                this.select(b);
                 return true;
             }
         }
         return false;
+    }
+
+    private select(selectedButton: Button) {
+        for (const b of this.buttons) {
+            if (b === selectedButton) {
+                b.select();
+            } else {
+                b.deselect();
+            }
+        }
+    }
+
+    public selectButton(i: number) {
+        if (i>=0 && i<this.buttons.length) {
+            this.select(this.buttons[i]);
+        }
     }
 
     public static cannonIcon(size: number): Renderer {

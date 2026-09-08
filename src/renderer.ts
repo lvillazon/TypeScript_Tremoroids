@@ -46,12 +46,18 @@ export class Renderer {
     private LINE_WIDTH = 2;
     public image: Graphics;
     private cursorPos: PointData;
-    public static style: RenderStyle = "VECTOR";
+    public style: RenderStyle;
+    public static globalStyle: RenderStyle = "VECTOR";
     
-    public constructor(seed?: number) {
+    public constructor(seed?: number, style?: RenderStyle | null) {
         this.image = new Graphics();
         this.cursorPos = {x: 0, y: 0};
-        if (Renderer.style == "NEON") {
+        if (style) {
+            this.style = style;
+        } else {
+            this.style = Renderer.globalStyle;
+        }
+        if (this.style == "NEON") {
             this.LINE_COLOR = pickRandomColor(seed);
         }
 33    }
@@ -70,7 +76,7 @@ export class Renderer {
     }
     
     private generalPoly(points: PointData[], closed: boolean) {
-        switch (Renderer.style) {
+        switch (this.style) {
             case "FAST": {
                 this.image
                     .poly(points, closed)
@@ -135,7 +141,7 @@ export class Renderer {
     }
 
     public circle(x: number, y: number, radius: number) {
-        switch (Renderer.style) {
+        switch (this.style) {
             case "FAST": {
                 this.image
                     .circle(x, y, radius)
@@ -190,7 +196,7 @@ export class Renderer {
     }
 
     public lineTo(x: number, y: number) {
-        switch (Renderer.style) {
+        switch (this.style) {
             case "FAST": {
                 this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
                 this.image.lineTo(x, y).stroke({
