@@ -1,4 +1,6 @@
 // all projectiles fired by the tank
+// noinspection RedundantIfStatementJS
+
 import { type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 
@@ -74,8 +76,8 @@ export class Shot {
         return this.rendered.image.position;
     }
 
-    public leavesDebris(): boolean {
-        return false;  // stop old shells piling up on the ground like rocks do
-    }
+    // public leavesDebris(): boolean {
+    //     return false;  // stop old shells piling up on the ground like rocks do
+    // }
 
 }

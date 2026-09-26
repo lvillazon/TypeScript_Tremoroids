@@ -24,22 +24,22 @@ type GameState = "PAUSED" | "PLAYING" | "STUCK" | "JUST LOST" | "GAME OVER";
 
 export class Game {
     private app: Application;
-    private rockLayer: Container;
+    private readonly rockLayer: Container;
     private rockManager: RockManager;
-    private landscapeLayer: Container;
-    private landscape: Landscape;
-    private playerLayer: Container;
+    private readonly landscapeLayer: Container;
+    private readonly landscape: Landscape;
+    private readonly playerLayer: Container;
     private tank: Tank;
-    private shootingLayer: Container;
+    private readonly shootingLayer: Container;
     private crosshairs: CrossHairs;
     private shotManager: ShotManager;
     private soundManager: SoundManager;
-    private worldLayer: Container;
-    private UILayer: Container;
+    private readonly worldLayer: Container;
+    private readonly UILayer: Container;
     private textManager: TextManager
     private buttonManager: ButtonManager;
-    private debugInfo: Debugger;
-    private debugLayer: Container;
+    private readonly debugInfo: Debugger;
+    private readonly debugLayer: Container;
     private keys: Set<string>;
     private countdown: number;         // how long player has left to get moving again
     private countdownLabel: Label | null;
@@ -49,8 +49,8 @@ export class Game {
     private cameraShake: number;
     private firing: boolean;
     private scroll: number;
-    private onRestart: () => void;
-    private tickerCallback: (ticker: Ticker) => void;
+    private readonly onRestart: () => void;
+    private readonly tickerCallback: (ticker: Ticker) => void;
     
     private pointerMoveCallback = (event: FederatedPointerEvent) => {
         const mouse = event.global;
@@ -87,7 +87,7 @@ export class Game {
             this.landscapeLayer, 
             app.screen.height - GROUND_LEVEL, 
             app.screen.width,
-        );this.landscapeLayer
+        );
 
         this.rockLayer = new Container();
         this.rockManager = new RockManager(
@@ -99,7 +99,7 @@ export class Game {
             app.renderer,
             this.playerLayer,
             this.landscape,
-            {x: app.screen.width*1/4, y: app.screen.height - GROUND_LEVEL},  // position
+            {x: app.screen.width*0.25, y: app.screen.height - GROUND_LEVEL},  // position
             20);  // size
 
         this.shootingLayer = new Container();
@@ -329,7 +329,7 @@ export class Game {
             this.soundManager.stop("TANK_RUMBLE");
             this.soundManager.stop("TANK_STUCK");
             this.soundManager.play("TANK_DEAD");
-            this.soundManager.stopAll();4
+            this.soundManager.stopAll();
             this.endGame();
         }
     }
@@ -484,7 +484,7 @@ export class Game {
 
     private changeRenderStyle(style: RenderStyle) {
         Renderer.globalStyle = style;
-        this.requestRestart();21
+        this.requestRestart();
     }
 
     private soundVolume(distance: number) {

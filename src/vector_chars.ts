@@ -5,7 +5,7 @@ import { Renderer } from "./renderer";
 export class VectorChar {
     public rendered: Renderer;
     public position: PointData;
-    private char: String;
+    private readonly char: String;
     public width: number;
     public height: number;
 

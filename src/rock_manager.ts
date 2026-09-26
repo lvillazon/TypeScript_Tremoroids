@@ -10,9 +10,9 @@ const VERTICAL_DECAY = 3; // how much vertical velocity drops for shattered rock
 export class RockManager {
     private displayLayer: Container;
     private rocks: Rock[] = [];
-    private maxRocks: number;
-    private minSize: number;
-    private maxSize: number;
+    private readonly maxRocks: number;
+    private readonly minSize: number;
+    private readonly maxSize: number;
     
     constructor(layer: Container, maxRocks: number, minSize:number, maxSize:number) {
         this.displayLayer = layer;

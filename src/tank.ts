@@ -20,8 +20,7 @@ function slope(point1: PointData, point2: PointData): number {
     // gradient of the line connecting these points   
     const xDiff = point1.x - point2.x;
     const yDiff = point1.y - point2.y;
-    const slope = (yDiff==0) ? Infinity : yDiff / xDiff;
-    return slope;
+    return (yDiff==0) ? Infinity : yDiff / xDiff;
 }
 
 export class FiringSolution {
@@ -42,30 +41,30 @@ export class FiringSolution {
 
 export class Tank {
     private displayLayer: Container;
-    private tankContainer: Container;
+    private readonly tankContainer: Container;
     private ground: Landscape;
     private speed: number;
     public velocity: PointData;
     public landscapeX: number;  // how far the tank has travelled across the landscape
     private oldPosition: PointData;
     public rotationSpeed: number;
-    private gunCaliber: number;
-    private gunLength: number;
+    private readonly gunCaliber: number;
+    private readonly gunLength: number;
     private muzzlePosition: PointData;
     private gunElevation: number;
-    private size: number;
-    private trackSpacing: number;
-    private centerContactPoint: PointData;
+    private readonly size: number;
+    private readonly trackSpacing: number;
+    private readonly centerContactPoint: PointData;
     private centerOfGravity: PointData;  // in local coords
-    private frontWheel: PointData;
-    private backWheel: PointData;
+    private readonly frontWheel: PointData;
+    private readonly backWheel: PointData;
 
     private frames: Texture[] = [];
     private frameNumber: number;
-    private sprite: Sprite;
+    private readonly sprite: Sprite;
     private barrel: Renderer;
-    private minElevation: number;
-    private maxElevation: number;
+    private readonly minElevation: number;
+    private readonly maxElevation: number;
     private dead: boolean;
     private shotCooldown: number;
     private lastShotTime: number;
@@ -78,7 +77,7 @@ export class Tank {
         this.ground = ground;
         this.size = size;
         this.trackSpacing = size/3;
-        this.gunCaliber = this.size * 0;  // half the barrel thickness, in pixels. 0 = single line
+        this.gunCaliber = 0;  // half the barrel thickness, in pixels. 0 = single line
         this.gunLength = this.size * 2.5;  // barrel length
         this.muzzlePosition = {x: 0, y: 0};
         this.gunElevation = 0;
@@ -236,7 +235,7 @@ export class Tank {
 
         // the tank image comprises:
         // a semicircle turret in the middle, with a line for the barrel
-        let points: PointData[] = [];
+        let points: PointData[];
         // for (let i=0; i<tank_image_detail+1; i++) {
         //     let theta = -Math.PI + Math.PI * i / tank_image_detail;
         //     let x = this.size * Math.cos(theta);
@@ -349,9 +348,9 @@ export class Tank {
         );
     }
 
-    public getGunPower(): number{
-        return 7;
-    }
+    // public getGunPower(): number{
+    //     return 7;
+    // }
 
     private drawBarrel(aimPoint: PointData, debugHook: Debugger) {
         // barrel tries to point at the crosshairs

@@ -32,18 +32,17 @@ function pickRandomColor(seed?: number): number {
             0x4BFF36,
             0x02FEE4
         ];
-    const result = colors[Math.floor(random() * colors.length)];
-    return result;
+    return colors[Math.floor(random() * colors.length)];
 }
 
 export class Renderer {
-    private BACKGROUND = 0x000000;
-    private GLOW_COLOR = 0x0055AA;
-    private LINE_COLOR = 0xBBBBBB;
-    private VERTEX_COLOR = 0xFFFFFF;
-    private VERTEX_SIZE = 1;
-    private GLOW_WIDTH = 4;
-    private LINE_WIDTH = 2;
+    private readonly BACKGROUND = 0x000000;
+    private readonly GLOW_COLOR = 0x0055AA;
+    private readonly lineColor: number;
+    private readonly VERTEX_COLOR = 0xFFFFFF;
+    private readonly VERTEX_SIZE = 1;
+    private readonly GLOW_WIDTH = 4;
+    private readonly LINE_WIDTH = 2;
     public image: Graphics;
     private cursorPos: PointData;
     public style: RenderStyle;
@@ -57,10 +56,10 @@ export class Renderer {
         } else {
             this.style = Renderer.globalStyle;
         }
-        if (this.style == "NEON") {
-            this.LINE_COLOR = pickRandomColor(seed);
-        }
-33    }
+        this.lineColor = (this.style == "NEON")
+            ? this.lineColor = pickRandomColor(seed)
+            : 0xBBBBBB;
+    }
 
     public clear() {
         this.image.clear();
@@ -82,7 +81,7 @@ export class Renderer {
                     .poly(points, closed)
                     .stroke({
                     width: this.LINE_WIDTH,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     });
                 break;
             }
@@ -94,7 +93,7 @@ export class Renderer {
                     })
                     .stroke({
                     width: this.LINE_WIDTH * 2,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     cap: "round",
                     join: "round"
                     });
@@ -108,7 +107,7 @@ export class Renderer {
                     })
                     .stroke({
                     width: this.LINE_WIDTH * 2,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     cap: "round",
                     join: "round"
                     });
@@ -128,7 +127,7 @@ export class Renderer {
                     .poly(points, closed)
                     .stroke({
                     width: this.LINE_WIDTH,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     });
                 for (let i=0; i<points.length; i++) {
                     this.image
@@ -147,7 +146,7 @@ export class Renderer {
                     .circle(x, y, radius)
                     .stroke({
                     width: this.LINE_WIDTH,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     });
                 break;
             }
@@ -156,7 +155,7 @@ export class Renderer {
                     .circle(x, y, radius)
                     .stroke({
                     width: this.LINE_WIDTH * 2,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     cap: "round",
                     join: "round"
                     });
@@ -167,7 +166,7 @@ export class Renderer {
                     .circle(x, y, radius)
                     .stroke({
                     width: this.LINE_WIDTH * 2,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     cap: "round",
                     join: "round"
                     });
@@ -184,7 +183,7 @@ export class Renderer {
                     .circle(x, y, radius)
                     .stroke({
                     width: this.LINE_WIDTH,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     });
                 break;
             }
@@ -201,7 +200,7 @@ export class Renderer {
                 this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
                 this.image.lineTo(x, y).stroke({
                     width: this.LINE_WIDTH,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     });
                 this.moveTo(x, y);
                 break;
@@ -210,7 +209,7 @@ export class Renderer {
                 this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
                 this.image.lineTo(x, y).stroke({
                     width: this.LINE_WIDTH * 2,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     cap: "round",
                     join: "round"
                     });
@@ -221,7 +220,7 @@ export class Renderer {
                 this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
                 this.image.lineTo(x, y).stroke({
                     width: this.LINE_WIDTH * 2,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     cap: "round",
                     join: "round"
                     });
@@ -237,7 +236,7 @@ export class Renderer {
                 this.image.moveTo(this.cursorPos.x, this.cursorPos.y);
                 this.image.lineTo(x, y).stroke({
                     width: this.LINE_WIDTH,
-                    color: this.LINE_COLOR,
+                    color: this.lineColor,
                     });
                 this.image
                     .circle(x, y, this.VERTEX_SIZE)

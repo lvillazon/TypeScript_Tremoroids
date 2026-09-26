@@ -7,7 +7,7 @@ const DEBUG = false;
 
 export class CrossHairs {
     private displayLayer: Container;
-    private size: number;
+    private readonly size: number;
     private rendered: Renderer;
     
     public constructor(layer: Container, size: number) {

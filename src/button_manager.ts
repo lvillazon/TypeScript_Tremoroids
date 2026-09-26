@@ -1,5 +1,5 @@
 // Vector style outlines for letters and numbers
-import { Bounds, Container, ColorMatrixFilter, type PointData } from "pixi.js";
+import { Bounds, Container, type PointData } from "pixi.js";
 import { Renderer } from "./renderer";
 
 export class Button {

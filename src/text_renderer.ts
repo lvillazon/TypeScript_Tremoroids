@@ -6,7 +6,7 @@ export class Label {
     public text: String;
     public position: PointData;
     public height: number;
-    private kerning: number;
+    private readonly kerning: number;
     private renderedChars: VectorChar[] = [];
     public textContainer: Container;
 

@@ -11,7 +11,7 @@ const ROUGHNESS = 0.1;
 export class Landscape {
     private displayLayer: Container;
     public outline: PointData[] = [];
-    private groundHeight: number;
+    private readonly groundHeight: number;
     private surfaceLine = new Renderer();
     
     constructor(layer: Container, groundHeight: number, windowWidth: number) {
@@ -24,13 +24,12 @@ export class Landscape {
 
     update(width: number, scroll: number, debugHook: Debugger) {
         // scroll the landscape
-        let i = 0;
-        for (i=0; i<this.outline.length; i++) {
+        for (let i=0; i<this.outline.length; i++) {
             this.outline[i].x = this.outline[i].x - scroll;
         }
         // remove any points that no longer affect the visible terrain
         // ie points whose righthand neighbour is also offscreen
-        i=0
+        let i=0
         let pointsToRemove = 0;
         while (i<this.outline.length-1 && this.outline[i+1].x < 0) {
             pointsToRemove++;
@@ -65,57 +64,53 @@ export class Landscape {
     }
 
     // a non-random, fixed terrain to test tank movement
-    testUpdate(width: number, scroll: number) {
-        // scroll the landscape
-        let i = 0;
-        for (i=0; i<this.outline.length; i++) {
-            this.outline[i].x = this.outline[i].x - scroll;
-        }
-        // remove any points that no longer affect the visible terrain
-        // ie points whose righthand neighbour is also offscreen
-        i=0
-        let pointsToRemove = 0;
-        while (i<this.outline.length-1 && this.outline[i+1].x < 0) {
-            pointsToRemove++;
-            i++;
-        }
-        for (i=0; i<pointsToRemove; i++) {
-            this.outline.shift();
-        }
-
-        if (this.outline[this.outline.length-1].x < width) {
-            // add a new point to make sure the landscape always reaches to the end of the screen
-            if (this.heightAt(width - 100) == this.groundHeight) {
-                this.outline.push({
-                    x: width, 
-                    y: this.groundHeight
-                });
-                this.outline.push({
-                    x: width + 100, 
-                    y: this.groundHeight -100
-                });
-                this.outline.push({
-                    x: width + 150, 
-                    y: this.groundHeight -100
-                });
-                this.outline.push({
-                    x: width + 250, 
-                    y: this.groundHeight
-                });
-            }
-        }
-
-        // redraw the ground surface
-        this.surfaceLine.clear();
-        this.surfaceLine.moveTo(0, this.outline[0].y);
-        for (let i=0; i<this.outline.length; i++) {
-            this.surfaceLine.lineTo(this.outline[i].x, this.outline[i].y);
-        }
-    }
-
-    height(): number {
-        return this.groundHeight;
-    }
+    // testUpdate(width: number, scroll: number) {
+    //     // scroll the landscape
+    //     let i = 0;
+    //     for (i=0; i<this.outline.length; i++) {
+    //         this.outline[i].x = this.outline[i].x - scroll;
+    //     }
+    //     // remove any points that no longer affect the visible terrain
+    //     // ie points whose righthand neighbour is also offscreen
+    //     i=0
+    //     let pointsToRemove = 0;
+    //     while (i<this.outline.length-1 && this.outline[i+1].x < 0) {
+    //         pointsToRemove++;
+    //         i++;
+    //     }
+    //     for (i=0; i<pointsToRemove; i++) {
+    //         this.outline.shift();
+    //     }
+    //
+    //     if (this.outline[this.outline.length-1].x < width) {
+    //         // add a new point to make sure the landscape always reaches to the end of the screen
+    //         if (this.heightAt(width - 100) == this.groundHeight) {
+    //             this.outline.push({
+    //                 x: width,
+    //                 y: this.groundHeight
+    //             });
+    //             this.outline.push({
+    //                 x: width + 100,
+    //                 y: this.groundHeight -100
+    //             });
+    //             this.outline.push({
+    //                 x: width + 150,
+    //                 y: this.groundHeight -100
+    //             });
+    //             this.outline.push({
+    //                 x: width + 250,
+    //                 y: this.groundHeight
+    //             });
+    //         }
+    //     }
+    //
+    //     // redraw the ground surface
+    //     this.surfaceLine.clear();
+    //     this.surfaceLine.moveTo(0, this.outline[0].y);
+    //     for (let i=0; i<this.outline.length; i++) {
+    //         this.surfaceLine.lineTo(this.outline[i].x, this.outline[i].y);
+    //     }
+    // }
 
     public heightAt(x: number): number {
         if (this.outline.length <= 2) {  // landscape is just a flat line
